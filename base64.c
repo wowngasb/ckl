@@ -50,7 +50,7 @@ static char cmove_bits(unsigned char src, unsigned lnum, unsigned rnum) {
 	return src;
 }
 
-void base64_encode(const unsigned char *indata, int inlen, char *outdata, int *outlen, int safe)
+void base64_encode(unsigned char *indata, int inlen, char *outdata, int *outlen, int safe)
 {
 	if (!indata || inlen <= 0 || !outdata || !outlen) {
 		return;
@@ -63,7 +63,7 @@ void base64_encode(const unsigned char *indata, int inlen, char *outdata, int *o
 	}
 	in_len = inlen + pad_num; // 拼接后的长度, 实际编码需要的长度(3的倍数)
 
-	int out_len = in_len * 8 / 6; // 编码后的长度
+	int out_len = in_len * 4 / 3; // 编码后的长度
 
 	char *p = outdata; // 定义指针指向传出data的首地址
 
@@ -72,7 +72,9 @@ void base64_encode(const unsigned char *indata, int inlen, char *outdata, int *o
 		int value = *indata >> 2; // 将indata第一个字符向右移动2bit(丢弃2bit)
 		char c = base64_alphabet[value]; // 对应base64转换表的字符
 		*p = c; // 将对应字符(编码后字符)赋值给outdata第一字节
-
+		if (safe) {
+			*p = sefe_url_char_encode(*p);
+		}
 		//处理最后一组(最后3字节)的数据
 		if (i == inlen + pad_num - 3 && pad_num != 0) {
 			if (pad_num == 1) {
@@ -119,28 +121,38 @@ void base64_encode(const unsigned char *indata, int inlen, char *outdata, int *o
 	return;
 }
 
-void base64_encode_str(const char *indata, char *outdata, int *outlen, int safe)
+void base64_encode_str(char *indata, char *outdata, int *outlen, int safe)
 {
 	base64_decode(indata, strlen(indata), outdata, outlen, safe);
 	return;
 }
 
-void base64_decode(const char *indata, int inlen, unsigned char *outdata, int *outlen, int safe)
+void base64_decode(char *indata, int inlen, unsigned char *outdata, int *outlen, int safe)
 {
+	int t = 0, x = 0, y = 0, i = 0;
+	unsigned char c = 0;
+	int g = 3;
+	int rlen;
+
 	if (!indata || inlen <= 0 || !outdata || !outlen) {
 		return ;
 	}
 	if (!safe && inlen % 4 != 0) { // 需要解码的数据不是4字节倍数
-		return ;
+		return;
 	}
 
-	int t = 0, x = 0, y = 0, i = 0;
-	unsigned char c = 0;
-	int g = 3;
+	rlen = inlen;
+	if (safe) {
+		inlen = inlen % 4 == 0 ? inlen : (inlen + 4 - inlen % 4);
+	}
 
-	while (indata[x] != 0) {
+	for (x = 0; x < inlen; ++x)
+	{
 		// 需要解码的数据对应的ASCII值对应base64_suffix_map的值
-		c = safe ? sefe_url_char_decode(indata[x++]) : indata[x++];
+		c = x < rlen ? indata[x] : '=';
+		if (safe) {
+			c = sefe_url_char_decode(c);
+		}
 		c = base64_suffix_map[c];
 		if (c == 255) {
 			return;// 对应的值不在转码表中
@@ -149,8 +161,8 @@ void base64_decode(const char *indata, int inlen, unsigned char *outdata, int *o
 			continue;// 对应的值是换行或者回车
 		}
 		if (c == 254) {  // 对应的值是'='
-			c = 0; 
-			g--; 
+			c = 0;
+			g--;
 		}
 		t = (t << 6) | c; // 将其依次放入一个int型中占3字节
 		if (++y == 4) {
@@ -164,13 +176,14 @@ void base64_decode(const char *indata, int inlen, unsigned char *outdata, int *o
 			y = t = 0;
 		}
 	}
+
 	*outlen = i;
 
 	return ;
 }
 
-void base64_decode_str(const char *indata, int inlen, unsigned char *outdata, int *outlen, int safe)
+void base64_decode_str(char *indata, int inlen, unsigned char *outdata, int *outlen, int safe)
 {
-	base64_decode_str(indata, strlen(indata), outdata, outlen, safe);
+	base64_decode(indata, strlen(indata), outdata, outlen, safe);
 	return;
 }
