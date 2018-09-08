@@ -23,6 +23,14 @@ extern "C" {
 
 	void md5_str4(char *indata1, char *indata2, char *indata3, char *indata4, char *outdata, int *outlen, int upper);
 
+	void decode(char* indata, int inlen, unsigned char* outdata, int *outlen, char* key, char* salt, int rnd_length, int chk_length);
+
+	void ckl_decode(char* indata, int inlen, unsigned char* outdata, int *outlen, char* key);
+
+	void encode(char* indata, int inlen, unsigned char* outdata, int *outlen, char* key, int expiry, char* salt, int rnd_length, int chk_length);
+
+	void ckl_encode(char* indata, int inlen, unsigned char* outdata, int *outlen, char* key, int expiry);
+
 	void rand_str(int len, char *output);
 
 	unsigned int byteToInt32WithLittleEndian(unsigned char byte0, unsigned char byte1, unsigned char byte2, unsigned char byte3);
@@ -33,10 +41,11 @@ extern "C" {
 
 	void int32ToHexWithLittleEndian(unsigned int ival, char *output, int *outlen, int upper);
 
+
+
+	void authcode(int cmd, char* indata, int inlen, unsigned char* outdata, int *outlen, char* _key, unsigned int expiry, char* salt, int rnd_length, int chk_length);
+
 	void encodeByXor(unsigned char* buf, int buflen, unsigned char* key, int keylen);
-
-	void authcode(int cmd, char* indata, int inlen, unsigned char* outdata, int *outlen, char* key, unsigned int expiry, char* salt, int rnd_length, int chk_length);
-
 #if __cplusplus
 }
 #endif

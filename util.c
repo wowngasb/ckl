@@ -10,6 +10,29 @@
 #define _toupper(x) ( (x) >= 0x61 && (x) <= 0x7a ? (x) - 0x20 : (x) )
 
 
+
+const char *rand_base = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz";
+const int rand_base_len = 62;
+
+void rand_str(int len, char *output)
+{
+	int i;
+	time_t t;
+
+	if (len <= 0) {
+		return;
+	}
+
+	/* 初始化随机数发生器 */
+	srand((unsigned)time(&t));
+
+	for (i = 0; i < len; ++i) {
+		output[i] = rand_base[rand() % rand_base_len];
+	}
+
+	return;
+}
+
 void ByteToHexStr(unsigned char *indata, int inlen, char *outdata, int *outlen, int upper)
 {
 	short i;
@@ -165,32 +188,6 @@ void ckl_encode(char* indata, int inlen, unsigned char* outdata, int *outlen, ch
 }
 
 
-
-
-const char *rand_base = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz";
-const int rand_base_len = 62;
-
-void rand_str(int len, char *output)
-{
-	int i;
-	time_t t;
-
-	if (len <= 0) {
-		return ;
-	}
-
-	/* 初始化随机数发生器 */
-	srand((unsigned)time(&t));
-
-	for (i = 0; i < len; ++i) {
-		output[i] = rand_base[rand() % rand_base_len];
-	}
-
-	return ;
-}
-
-
-
 unsigned int byteToInt32WithLittleEndian(unsigned char byte0, unsigned char byte1, unsigned char byte2, unsigned char byte3)
 {
 	return (byte3 << 24) + (byte2 << 16) + (byte1 << 8) + byte0;
@@ -278,21 +275,25 @@ void authcode(int cmd, char* indata, int inlen, unsigned char* outdata, int *out
 
 		tmpbuf = (unsigned char *)malloc( (inlen - rnd_length) * 3 / 4 + 3 );
 		// 解码，会从第 $keyc_length Byte开始，因为密文前 $keyc_length Byte保存 动态密匙
+
 		base64_decode(indata + rnd_length, inlen - rnd_length, tmpbuf, &retlen, 1);
+		
 		encodeByXor(tmpbuf, retlen, crypt, cryptlen);
+		
 		// 验证数据有效性
-		expiry_t = retlen >= 4 ? byteToInt32WithLittleEndian(outdata[0], outdata[1], outdata[2], outdata[3]) : 0;
+		expiry_t = retlen >= 4 ? byteToInt32WithLittleEndian(tmpbuf[0], tmpbuf[1], tmpbuf[2], tmpbuf[3]) : 0;
 		
 		if (retlen >= pre_len) {
 			ByteToHexStr(tmpbuf + 4, chk_length, checksum, &tmpint, 0);
 			checksum[tmpint] = '\0';
 			md5_byte3(salt, strlen(salt), tmpbuf + pre_len, retlen - pre_len, keyb, strlen(keyb), tmp_sum, &tmpint, 0);
 			tmp_sum[2 * chk_length] = '\0';
-			if ((expiry_t == 0 || expiry_t > timestamp) && strcmp(checksum, tmp_sum)) {
+			if ((expiry_t == 0 || expiry_t > timestamp) && strcmp(checksum, tmp_sum) == 0) {
 				*outlen = retlen - pre_len;
 				memcpy(outdata, tmpbuf + pre_len, retlen - pre_len);
 			}
 		}
+		free(tmpbuf);
 		return ;
 	}
 	else {
@@ -318,11 +319,14 @@ void authcode(int cmd, char* indata, int inlen, unsigned char* outdata, int *out
 		int32ToByteWithLittleEndian(expiry_t, tmpbuf);
 		HexStrToByte_str(checksum, tmpbuf + 4, &tmpint);
 		memcpy(tmpbuf + pre_len, indata, inlen);
-		encodeByXor(tmpbuf, inlen + pre_len, crypt, cryptlen);
 
+		encodeByXor(tmpbuf, inlen + pre_len, crypt, cryptlen);
+		
 		memcpy(outdata, keyc, rnd_length);
 		base64_encode(tmpbuf, inlen + pre_len, outdata + rnd_length, &retlen, 1);
+		
 		*outlen = retlen + rnd_length;
+		free(tmpbuf);
 		return;
 	}
 }
