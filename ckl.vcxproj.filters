@@ -15,16 +15,28 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
+    <ClCompile Include="md5.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ckl.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="util.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="base64.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="pch.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="ckl.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
+    <ClInclude Include="md5.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="base64.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
