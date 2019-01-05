@@ -18,13 +18,19 @@
     <ClCompile Include="md5.c">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="ckl.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="util.c">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="base64.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="bigint.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="AllTests.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CuTest.c">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -36,6 +42,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="base64.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="bigint.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CuTest.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

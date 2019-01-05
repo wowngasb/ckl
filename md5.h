@@ -1,5 +1,5 @@
-#ifndef MD5_H  
-#define MD5_H  
+#ifndef CKL_MD5_H  
+#define CKL_MD5_H  
 
 
 #define F(x,y,z) ((x & y) | (~x & z))  
@@ -58,4 +58,4 @@ void MD5Decode(unsigned int *output, unsigned char *input, unsigned int len);
 }
 #endif
 
-#endif /* MD5_H */
+#endif /* CKL_MD5_H */

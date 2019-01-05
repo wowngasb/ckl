@@ -61,7 +61,7 @@ void ByteToHexStr(unsigned char *indata, int inlen, char *outdata, int *outlen, 
 
 void ByteToHexStr_str(char *indata, char *outdata, int *outlen, int upper)
 {
-	ByteToHexStr(indata, strlen(indata), outdata, outlen, upper);
+	ByteToHexStr(indata, (int)strlen(indata), outdata, outlen, upper);
 	return;
 }
 
@@ -91,7 +91,7 @@ void HexStrToByte(char *indata, int inlen, unsigned char *outdata, int *outlen)
 
 void HexStrToByte_str(char *indata, unsigned char *outdata, int *outlen)
 {
-	HexStrToByte(indata, strlen(indata), outdata, outlen);
+	HexStrToByte(indata, (int)strlen(indata), outdata, outlen);
 	return;
 }
 
@@ -101,7 +101,7 @@ void md5_str(char *indata, char *outdata, int *outlen, int upper)
 	unsigned char digest[16] = { 0 };
 
 	MD5Init(&context);
-	MD5Update(&context, (unsigned char *)indata, strlen(indata));
+	MD5Update(&context, (unsigned char *)indata, (int)strlen(indata));
 	MD5Final(&context, digest);
 
 	ByteToHexStr(digest, 16, outdata, outlen, upper);
@@ -113,8 +113,8 @@ void md5_str2(char *indata1, char *indata2, char *outdata, int *outlen, int uppe
 	unsigned char digest[16] = { 0 };
 
 	MD5Init(&context);
-	MD5Update(&context, (unsigned char *)indata1, strlen(indata1));
-	MD5Update(&context, (unsigned char *)indata2, strlen(indata2));
+	MD5Update(&context, (unsigned char *)indata1, (int)strlen(indata1));
+	MD5Update(&context, (unsigned char *)indata2, (int)strlen(indata2));
 	MD5Final(&context, digest);
 
 	ByteToHexStr(digest, 16, outdata, outlen, upper);
@@ -126,9 +126,9 @@ void md5_str3(char *indata1, char *indata2, char *indata3, char *outdata, int *o
 	unsigned char digest[16] = { 0 };
 
 	MD5Init(&context);
-	MD5Update(&context, (unsigned char *)indata1, strlen(indata1));
-	MD5Update(&context, (unsigned char *)indata2, strlen(indata2));
-	MD5Update(&context, (unsigned char *)indata3, strlen(indata3));
+	MD5Update(&context, (unsigned char *)indata1, (int)strlen(indata1));
+	MD5Update(&context, (unsigned char *)indata2, (int)strlen(indata2));
+	MD5Update(&context, (unsigned char *)indata3, (int)strlen(indata3));
 	MD5Final(&context, digest);
 
 	ByteToHexStr(digest, 16, outdata, outlen, upper);
@@ -155,10 +155,10 @@ void md5_str4(char *indata1, char *indata2, char *indata3, char *indata4, char *
 	unsigned char digest[16] = { 0 };
 
 	MD5Init(&context);
-	MD5Update(&context, (unsigned char *)indata1, strlen(indata1));
-	MD5Update(&context, (unsigned char *)indata2, strlen(indata2));
-	MD5Update(&context, (unsigned char *)indata3, strlen(indata3));
-	MD5Update(&context, (unsigned char *)indata4, strlen(indata4));
+	MD5Update(&context, (unsigned char *)indata1, (int)strlen(indata1));
+	MD5Update(&context, (unsigned char *)indata2, (int)strlen(indata2));
+	MD5Update(&context, (unsigned char *)indata3, (int)strlen(indata3));
+	MD5Update(&context, (unsigned char *)indata4, (int)strlen(indata4));
 	MD5Final(&context, digest);
 
 	ByteToHexStr(digest, 16, outdata, outlen, upper);
@@ -286,7 +286,7 @@ void authcode(int cmd, char* indata, int inlen, unsigned char* outdata, int *out
 		if (retlen >= pre_len) {
 			ByteToHexStr(tmpbuf + 4, chk_length, checksum, &tmpint, 0);
 			checksum[tmpint] = '\0';
-			md5_byte3(salt, strlen(salt), tmpbuf + pre_len, retlen - pre_len, keyb, strlen(keyb), tmp_sum, &tmpint, 0);
+			md5_byte3(salt, (int)strlen(salt), tmpbuf + pre_len, retlen - pre_len, keyb, (int)strlen(keyb), tmp_sum, &tmpint, 0);
 			tmp_sum[2 * chk_length] = '\0';
 			if ((expiry_t == 0 || expiry_t > timestamp) && strcmp(checksum, tmp_sum) == 0) {
 				*outlen = retlen - pre_len;
@@ -301,7 +301,7 @@ void authcode(int cmd, char* indata, int inlen, unsigned char* outdata, int *out
 			rand_str(rnd_length, keyc);
 			keyc[rnd_length] = '\0';
 		}
-		md5_byte3(salt, strlen(salt), indata, inlen, keyb, strlen(keyb), checksum, &tmpint, 0);
+		md5_byte3(salt, (int)strlen(salt), indata, inlen, keyb, (int)strlen(keyb), checksum, &tmpint, 0);
 		checksum[2 * chk_length] = '\0';
 		expiry_t = expiry > 0 ? expiry + timestamp : 0;
 

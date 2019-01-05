@@ -1,5 +1,5 @@
-#ifndef BASE64_H
-#define BASE64_H
+#ifndef CKL_BASE64_H
+#define CKL_BASE64_H
 
 #if __cplusplus
 extern "C" {
@@ -18,4 +18,4 @@ extern "C" {
 }
 #endif
 
-#endif /* BASE64_H */
+#endif /* CKL_BASE64_H */
