@@ -131,7 +131,7 @@ const static int PrimeTable[] = {
 	9907, 9923, 9929, 9931, 9941, 9949, 9967, 9973, 10007,10009
 };
 
-const static unsigned int PrimeTableLen = sizeof(PrimeTable) / sizeof(PrimeTable[0]);
+const static int PrimeTableLen = sizeof(PrimeTable) / sizeof(PrimeTable[0]);
 
 const static char *CharTable = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -139,6 +139,21 @@ const static char *CharTable = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 /*
 * 辅助函数 结果存回原数据单元
 */
+
+//大数 取负 结果存入 src
+void CB_S_Neg(CBigInt *src) {
+	if (src->m_nLength == 1 && src->m_ulValue[0] == 0) {
+		src->m_signed = 0;
+	}
+	else {
+		src->m_signed = src->m_signed == -1 ? 0 : -1;
+	}
+}
+
+//大数 绝对值 结果存入 src
+void CB_S_Abs(CBigInt *src) {
+	src->m_signed = 0;
+}
 
 //计算两个大数的和  src + A 结果存入 src
 void CB_S_Add(CBigInt *src, CBigInt *A) {
@@ -262,6 +277,30 @@ void CB_S_ModExp(CBigInt *src, CBigInt *A, CBigInt *B) {
 	CB_Mov(&tmp, src);
 }
 
+/****************************************************************************************
+大数 取负
+调用方式：CB_Neg(src, dst)
+返回值：无  src  取负  结果存入 dst
+****************************************************************************************/
+void CB_Neg(CBigInt *src, CBigInt *dst) {
+	CB_Mov(src, dst);
+	if (src->m_nLength == 1 && src->m_ulValue[0] == 0) {
+		dst->m_signed = 0;
+	}
+	else {
+		dst->m_signed = src->m_signed == -1 ? 0 : -1;
+	}
+}
+
+/****************************************************************************************
+大数 绝对值
+调用方式：CB_Abs(src, dst)
+返回值：无  src的绝对值  结果存入 dst
+****************************************************************************************/
+void CB_Abs(CBigInt *src, CBigInt *dst) {
+	CB_Mov(src, dst);
+	dst->m_signed = 0;
+}
 
 /****************************************************************************************
 大数比较
@@ -269,31 +308,57 @@ void CB_S_ModExp(CBigInt *src, CBigInt *A, CBigInt *B) {
 返回值：int 若 src<A 返回 -1  若 src=A 返回 0  若 src>A 返回 1
 ****************************************************************************************/
 int CB_Cmp(CBigInt *src, CBigInt *A) {
-	if (src->m_nLength > A->m_nLength) {
+	if (src->m_signed == -1 && A->m_signed != -1) {
+		return -1;
+	}
+	if (src->m_signed != -1 && A->m_signed == -1) {
 		return 1;
 	}
+
+	int opposite = 0;
+	if (src->m_signed == -1 && A->m_signed == -1) {
+		opposite = 1;
+	}
+
+	if (src->m_nLength > A->m_nLength) {
+		return opposite ? -1 : 1;
+	}
 	if (src->m_nLength < A->m_nLength) {
-		return -1;
+		return opposite ? 1 : -1;
 	}
 	for (int i = src->m_nLength - 1; i >= 0; i--) {
 		if (src->m_ulValue[i] > A->m_ulValue[i]) {
-			return 1;
+			return opposite ? -1 : 1;
 		}
 		if (src->m_ulValue[i] < A->m_ulValue[i]) {
-			return -1;
+			return opposite ? 1 : -1;
 		}
 	}
 	return 0;
 }
 
+int CB_Cmpi(CBigInt *src, unsigned long A) {
+	if (src->m_signed == -1) {
+		return -1;
+	}
+
+	if (src->m_nLength == 1) {
+		return src->m_ulValue[0] == A ? 0 : (src->m_ulValue[0] > A ? 1 : -1);
+	}
+	else {
+		return 1;
+	}
+}
+
 /****************************************************************************************
 大数赋值
-调用方式：CB_Mov(A, dst)
-返回值：无，dst 被赋值为 A
+调用方式：CB_Mov(src, dst)
+返回值：无，dst 被赋值为 src
 ****************************************************************************************/
-void CB_Mov(CBigInt *A, CBigInt *dst) {
-	dst->m_nLength = A->m_nLength;
-	memcpy(dst->m_ulValue, A->m_ulValue, sizeof(dst->m_ulValue));
+void CB_Mov(CBigInt *src, CBigInt *dst) {
+	dst->m_nLength = src->m_nLength;
+	dst->m_signed = src->m_signed;
+	memcpy(dst->m_ulValue, src->m_ulValue, sizeof(dst->m_ulValue));
 }
 
 void CB_Movi(unsigned __int64 A, CBigInt *dst) {
@@ -306,6 +371,7 @@ void CB_Movi(unsigned __int64 A, CBigInt *dst) {
 		dst->m_nLength = 1;
 		dst->m_ulValue[0] = (unsigned long)A;
 	}
+	dst->m_signed = 0;
 }
 
 /****************************************************************************************
@@ -315,6 +381,27 @@ void CB_Movi(unsigned __int64 A, CBigInt *dst) {
 ****************************************************************************************/
 void CB_Add(CBigInt *src, CBigInt *A, CBigInt *dst)
 {
+	if (src->m_signed == -1 && A->m_signed != -1) {
+		CBigInt _src;
+		CB_Abs(src, &_src);
+		CB_Sub(A, &_src, dst);
+		return;
+	}
+	if (src->m_signed != -1 && A->m_signed == -1) {
+		CBigInt _A;
+		CB_Abs(A, &_A);
+		CB_Sub(src, &_A, dst);
+		return;
+	}
+	if (src->m_signed == -1 && A->m_signed == -1) {
+		CBigInt _src, _A;
+		CB_Abs(src, &_src);
+		CB_Abs(A, &_A);
+		CB_Add(&_src, &_A, dst);
+		CB_S_Neg(dst);
+		return;
+	}
+
 	if (A->m_nLength == 1) {
 		CB_Addi(src, A->m_ulValue[0], dst);
 		return;
@@ -337,6 +424,14 @@ void CB_Add(CBigInt *src, CBigInt *A, CBigInt *dst)
 }
 
 void CB_Addi(CBigInt *src, unsigned long A, CBigInt *dst) {
+	if (src->m_signed == -1) {
+		CBigInt _src;
+		CB_Abs(src, &_src);
+		CB_Subi(&_src, A, dst);
+		CB_S_Neg(dst);
+		return;
+	}
+
 	CB_Mov(src, dst);
 	unsigned __int64 sum;
 	sum = dst->m_ulValue[0];
@@ -467,7 +562,7 @@ void CB_Muli(CBigInt *src, unsigned long A, CBigInt *dst) {
 /****************************************************************************************
 大数相除
 调用形式：CB_Div(src, A, dst)
-返回值：无，dst 被赋值为 src/A
+返回值：无，dst 被赋值为 src / A
 ****************************************************************************************/
 void CB_Div(CBigInt *src, CBigInt *A, CBigInt *dst) {
 	if (A->m_nLength == 1) {
@@ -532,13 +627,13 @@ void CB_Divi(CBigInt *src, unsigned long A, CBigInt *dst) {
 
 /****************************************************************************************
 大数求模
-调用形式：Mod(src, A, dst)
-返回值：无，dst 被赋值为 src%A
+调用形式：CB_Mod(src, A, dst)
+返回值：无，dst 被赋值为 src % A
 ****************************************************************************************/
 void CB_Mod(CBigInt *src, CBigInt *A, CBigInt *dst) {
 	int n = CB_Cmp(src, A);
 	if (n < 0) {
-		CB_Mov(A, dst);
+		CB_Mov(src, dst);
 		return ;
 	}
 	if (n = 0) {
@@ -553,10 +648,16 @@ void CB_Mod(CBigInt *src, CBigInt *A, CBigInt *dst) {
 	while (1) {
 		div = dst->m_ulValue[dst->m_nLength - 1];
 		num = A->m_ulValue[A->m_nLength - 1];
-		len = dst->m_nLength - A->m_nLength;
-		if ((div <= num) && len) { 
-			len--; 
-			div = (div << 32) + dst->m_ulValue[dst->m_nLength - 2]; 
+		len = dst->m_nLength - A->m_nLength;  // 一定大于等于0
+		if (div <= num) { 
+			if (dst->m_nLength > A->m_nLength) {
+				len--;
+				div = (div << 32) + dst->m_ulValue[dst->m_nLength - 2];
+			}
+			if (dst->m_nLength == A->m_nLength && dst->m_nLength > 1) {
+				div = (div << 32) + dst->m_ulValue[dst->m_nLength - 2];
+				num = (num << 32) + A->m_ulValue[A->m_nLength - 2];
+			}
 		}
 		div = div / (num + 1);
 		CB_Movi(div, &Y);
@@ -570,6 +671,7 @@ void CB_Mod(CBigInt *src, CBigInt *A, CBigInt *dst) {
 				Y.m_ulValue[i] = 0;
 			}
 		}
+
 		CB_S_Sub(dst, &Y);
 		n = CB_Cmp(dst, A);
 		if (n == 0) { 
@@ -594,6 +696,74 @@ unsigned long CB_Modi(CBigInt *src, unsigned long A){
 		carry = (unsigned long)(div % A);
 	}
 	return carry;
+}
+
+/****************************************************************************************
+最大公约数
+调用形式：CB_Gcd(src, A, dst)
+返回值：无，dst 被赋值为 gcd(src, A)
+****************************************************************************************/
+void CB_Gcd(CBigInt *src, CBigInt *A, CBigInt *dst) {
+	int n = CB_Cmp(src, A);
+	if (n < 0) {
+		CB_Gcd(A, src, dst);
+		return;
+	}
+	CBigInt tmp, A_;
+	CB_Mov(A, &A_);
+	CB_Mov(src, dst);
+	while (1) {
+		if (CB_Cmpi(&A_, 0) == 0) {
+			break;
+		}
+		CB_Mod(dst, &A_, &tmp);
+		CB_Mov(&A_, dst);
+		CB_Mov(&tmp, &A_);
+	}
+}
+
+
+/****************************************************************************************
+最小公倍数
+调用形式：CB_Lcm(src, A, dst)
+返回值：无，dst 被赋值为 lcm(src, A)
+****************************************************************************************/
+void CB_Lcm(CBigInt *src, CBigInt *A, CBigInt *dst) {
+	CBigInt mul, gcd;
+	CB_Gcd(src, A, &gcd);
+	CB_Mul(src, A, &mul);
+	CB_Div(&mul, &gcd, dst);
+}
+
+/****************************************************************************************
+扩展欧几里的算法
+调用形式：CB_ExtGcd(src, A, x, y)
+返回值：无，计算 src*x + A*y = gcd(src, A)中的 x与y的整数解
+****************************************************************************************/
+void CB_ExtGcd(CBigInt *src, CBigInt *A, CBigInt *x, CBigInt *y) {
+	int n = CB_Cmp(src, A);
+	if (n < 0) {
+		CB_ExtGcd(A, src, y, x);
+		return;
+	}
+
+	if (CB_Cmpi(A, 0) == 0) {
+		CB_Movi(1, x);
+		CB_Movi(0, y);
+		return;
+	}
+	else {
+		CBigInt x1, y1, tmp;
+		CB_Mod(src, A, &tmp);
+		CB_ExtGcd(A, &tmp, &x1, &y1);
+		
+		CB_Div(src, A, &tmp);
+		CB_S_Mul(&tmp, &y1);
+
+		CB_Mov(&y1, x);
+		CB_Sub(&x1, &tmp, y);
+		return;
+	}
 }
 
 /****************************************************************************************
@@ -900,7 +1070,7 @@ void CB_ModExp(CBigInt *src, CBigInt *A, CBigInt *B, CBigInt *dst) {
 int CB_TestPrime(CBigInt *src) {
 	unsigned int PrimeTableMax = PrimeTable[PrimeTableLen - 1] * PrimeTable[PrimeTableLen - 1];
 
-	unsigned int i, pass;
+	int i, pass;
 	if ((src->m_ulValue[0] & 1) == 0) {
 		return 2;
 	}
@@ -939,13 +1109,32 @@ int CB_TestPrime(CBigInt *src) {
 
 /****************************************************************************************
 产生随机素数
-调用方法：CB_FindPrime(bits, dst)
-返回值：无 dst 被赋值为一个bits位（0x100000000进制长度）的素数
+调用方法：CB_RandInit(len, dst, mask)
+返回值：无 dst 被赋值为一个len位（0x100000000进制长度）的随机数
 ****************************************************************************************/
-void CB_FindPrime(int bits, CBigInt *dst) {
+void CB_RandInit(int len, CBigInt *dst, int mask) {
 	int i;
 	CB_Movi(0, dst);
-	dst->m_nLength = bits;
+	dst->m_nLength = len;
+	for (i = 1; i < dst->m_nLength; i++) {
+		dst->m_ulValue[i] = rand() * 0x10000 + rand();
+	}
+	dst->m_ulValue[dst->m_nLength - 1] = dst->m_ulValue[dst->m_nLength - 1] | 0x80000000;
+	dst->m_ulValue[0] = rand() * 0x10000 + rand();
+	if (mask > 0) {
+		dst->m_ulValue[0] = dst->m_ulValue[0] | mask;
+	}
+}
+
+/****************************************************************************************
+产生随机素数
+调用方法：CB_FindPrime(len, dst)
+返回值：无 dst 被赋值为一个len位（0x100000000进制长度）的素数
+****************************************************************************************/
+void CB_FindPrime(int len, CBigInt *dst) {
+	int i;
+	CB_Movi(0, dst);
+	dst->m_nLength = len;
 	for (i = 1; i < dst->m_nLength; i++) {
 		dst->m_ulValue[i] = rand() * 0x10000 + rand();
 	}
@@ -953,7 +1142,7 @@ void CB_FindPrime(int bits, CBigInt *dst) {
 begin:
 	dst->m_ulValue[0] = rand() * 0x10000 + rand();
 	dst->m_ulValue[0] = dst->m_ulValue[0] | 3;
-	for (i = 0; i < 500; i++) { 
+	for (i = 0; i < PrimeTableLen; i++) { 
 		if (CB_Modi(dst, PrimeTable[i]) == 0) {
 			goto begin;
 		}

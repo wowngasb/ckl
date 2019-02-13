@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include<time.h>
 
 #include "md5.h"
 #include "base64.h"
@@ -151,7 +152,7 @@ void Test_ckl_rand_str(CuTest *tc) {
 	rand_str(retint, retstr);
 	retstr[retint] = '\0';
 
-	CuAssertIntEquals(tc, retint, strlen(retstr));
+	CuAssertIntEquals(tc, retint, (int)strlen(retstr));
 }
 
 void Test_ckl_md5_str(CuTest *tc) {
@@ -260,7 +261,7 @@ CuSuite* Suite_ckl_other() {
 	return suite;
 }
 
-const static char* bigint_str_list[] = {
+static char* bigint_str_list[] = {
 	"0",
 	"123",
 	"123456",
@@ -602,8 +603,84 @@ void Test_ckl_bigint_prime(CuTest *tc) {
 	CuAssertIntEquals(tc, 0, CB_TestPrime(&A));
 }
 
+
+void Test_ckl_bigint_gcd(CuTest *tc) {
+	CBigInt A, B, S, R;
+
+	char *A_ = "2243609008805117553865";
+	char *B_ = "652547036313776700990791694887580693";
+	CB_Get(A_, (int)strlen(A_), 10, &A);
+	CB_Get(B_, (int)strlen(B_), 10, &B);
+
+	CB_Gcd(&A, &B, &S);
+	char *R1_ = "65537";
+	CB_Get(R1_, (int)strlen(R1_), 10, &R);
+
+	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	CB_Gcd(&B, &A, &S);
+	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+
+	CB_Lcm(&A, &B, &S);
+	char *R2_ = "22339448087991052298736072688754433700342233207439485";
+	CB_Get(R2_, (int)strlen(R2_), 10, &R);
+
+	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	CB_Lcm(&B, &A, &S);
+	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+}
+
+void Test_ckl_bigint_rsa(CuTest *tc) {
+	CBigInt p, q, p_, q_, N, L, E, D, tmp;
+
+	// 1.随机选择两个不相等的质数p和q
+	CB_FindPrime(1024 / 32, &p);
+	CB_FindPrime(1024 / 32, &q);
+
+	// 2.计算p和q的乘积N
+	CB_Mul(&p, &q, &N);
+
+	// 3.计算N的欧拉函数φ(N) 记为 L  (这里取了 q-1, q-1 最小公倍数)
+	CB_Subi(&p, 1, &p_);
+	CB_Subi(&q, 1, &q_);
+	CB_Lcm(&p_, &q_, &L);
+
+	// 4.随机选择一个整数E，条件是1< E < L，且E与L互质  (实际应用中，常常选择65537)
+	CB_Movi(65537, &E);
+
+	// 5.计算E对于φ(N)的模反元素D  E*x + L*y = gcd(E, L) = 1  整数解 其中 x 即为 E
+	CB_ExtGcd(&E, &L, &D, &tmp);
+
+	unsigned char N_str[2048] = { 0 };
+	unsigned char E_str[2048] = { 0 };
+	unsigned char D_str[2048] = { 0 };
+	CB_Put(&N, N_str, sizeof(N_str), 10);
+	CB_Put(&E, E_str, sizeof(E_str), 10);
+	CB_Put(&D, D_str, sizeof(D_str), 10);
+	printf("\n pubkey :%s ,  %s", N_str, E_str);
+	printf("\n prikey :%s ,  %s", N_str, D_str);
+}
+
+void Test_ckl_bigint_rand(CuTest *tc) {
+	CBigInt A, B, C, S, R;
+	CB_RandInit(32, &A, 0);
+	CB_RandInit(33, &B, 0);
+	CB_RandInit(34, &C, 0);
+
+	CB_Mul(&A, &B, &S);
+	CB_Div(&S, &A, &R);
+	CuAssertIntEquals(tc, 0, CB_Cmp(&B, &R));
+
+	CB_Add(&A, &B, &S);
+	CB_Sub(&S, &A, &R);
+	CuAssertIntEquals(tc, 0, CB_Cmp(&B, &R));
+}
+
 CuSuite* Suite_ckl_bigint() {
 	CuSuite* suite = CuSuiteNew();
+	SUITE_ADD_TEST(suite, Test_ckl_bigint_gcd);
+	SUITE_ADD_TEST(suite, Test_ckl_bigint_rand);
+	SUITE_ADD_TEST(suite, Test_ckl_bigint_rsa);
+
 	SUITE_ADD_TEST(suite, Test_ckl_bigint_get_put);
 	SUITE_ADD_TEST(suite, Test_ckl_bigint_cmp);
 	SUITE_ADD_TEST(suite, Test_ckl_bigint_add);
@@ -623,11 +700,9 @@ void RunAllTests(void) {
 	CuString *output = CuStringNew();
 	CuSuite* suite = CuSuiteNew();
 
+	CuSuiteAddSuite(suite, Suite_ckl_bigint());
 	CuSuiteAddSuite(suite, Suite_ckl_encode_decode());
 	CuSuiteAddSuite(suite, Suite_ckl_other());
-
-
-	CuSuiteAddSuite(suite, Suite_ckl_bigint());
 
 	CuSuiteRun(suite);
 	CuSuiteSummary(suite, output);
@@ -637,6 +712,7 @@ void RunAllTests(void) {
 
 int main(void)
 {
+	srand((int)time(0));
 	RunAllTests();
 	system("PAUSE");
 }
