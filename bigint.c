@@ -163,9 +163,14 @@ void CB_S_Add(CBigInt *src, CBigInt *A) {
 }
 
 //大数与普通整数相加  src + A 结果存入 src
-void CB_S_Addi(CBigInt *src, unsigned long A) {
+void CB_S_Addi(CBigInt *src, int32_t A) {
 	CBigInt tmp;
 	CB_Addi(src, A, &tmp);
+	CB_Mov(&tmp, src);
+}
+void CB_S_Addu(CBigInt *src, uint32_t A) {
+	CBigInt tmp;
+	CB_Addu(src, A, &tmp);
 	CB_Mov(&tmp, src);
 }
 
@@ -184,9 +189,14 @@ void CB_S_Sub_Reverse(CBigInt *src, CBigInt *A) {
 }
 
 //大数与普通整数相减  src - A 结果存入 src
-void CB_S_Subi(CBigInt *src, unsigned long A) {
+void CB_S_Subi(CBigInt *src, int32_t A) {
 	CBigInt tmp;
 	CB_Subi(src, A, &tmp);
+	CB_Mov(&tmp, src);
+}
+void CB_S_Subu(CBigInt *src, uint32_t A) {
+	CBigInt tmp;
+	CB_Subu(src, A, &tmp);
 	CB_Mov(&tmp, src);
 }
 
@@ -198,9 +208,14 @@ void CB_S_Mul(CBigInt *src, CBigInt *A) {
 }
 
 //大数与普通整数相乘   src * A 结果存入 src
-void CB_S_Muli(CBigInt *src, unsigned long A) {
+void CB_S_Muli(CBigInt *src, int32_t A) {
 	CBigInt tmp;
 	CB_Muli(src, A, &tmp);
+	CB_Mov(&tmp, src);
+}
+void CB_S_Mulu(CBigInt *src, uint32_t A) {
+	CBigInt tmp;
+	CB_Mulu(src, A, &tmp);
 	CB_Mov(&tmp, src);
 }
 
@@ -219,9 +234,14 @@ void CB_S_Div_Reverse(CBigInt *src, CBigInt *A) {
 }
 
 //大数与普通整数相除   src / A 结果存入 src
-void CB_S_Divi(CBigInt *src, unsigned long A) {
+void CB_S_Divi(CBigInt *src, int32_t A) {
 	CBigInt tmp;
 	CB_Divi(src, A, &tmp);
+	CB_Mov(&tmp, src);
+}
+void CB_S_Divu(CBigInt *src, uint32_t A) {
+	CBigInt tmp;
+	CB_Divu(src, A, &tmp);
 	CB_Mov(&tmp, src);
 }
 
@@ -277,19 +297,30 @@ void CB_S_ModExp(CBigInt *src, CBigInt *A, CBigInt *B) {
 	CB_Mov(&tmp, src);
 }
 
+int CB_IsZero(CBigInt *src) {
+	return src->m_nLength == 1 && src->m_signed == 0 && src->m_ulValue[0] == 0 ? 1 : 0;
+}
+
+int CB_IsPositive(CBigInt *src) {
+	return src->m_signed != -1 && !CB_IsZero(src) ? 1 : 0;
+}
+
+int CB_IsNegative(CBigInt *src) {
+	return src->m_signed == -1 ? 1 : 0;
+}
+
 /****************************************************************************************
 大数 取负
 调用方式：CB_Neg(src, dst)
 返回值：无  src  取负  结果存入 dst
 ****************************************************************************************/
 void CB_Neg(CBigInt *src, CBigInt *dst) {
+	if (CB_IsZero(src)) {
+		CB_Modi(dst, 0);
+		return;
+	}
 	CB_Mov(src, dst);
-	if (src->m_nLength == 1 && src->m_ulValue[0] == 0) {
-		dst->m_signed = 0;
-	}
-	else {
-		dst->m_signed = src->m_signed == -1 ? 0 : -1;
-	}
+	dst->m_signed = src->m_signed == -1 ? 0 : -1;
 }
 
 /****************************************************************************************
@@ -298,6 +329,10 @@ void CB_Neg(CBigInt *src, CBigInt *dst) {
 返回值：无  src的绝对值  结果存入 dst
 ****************************************************************************************/
 void CB_Abs(CBigInt *src, CBigInt *dst) {
+	if (CB_IsZero(src)) {
+		CB_Movu(0, dst);
+		return;
+	}
 	CB_Mov(src, dst);
 	dst->m_signed = 0;
 }
@@ -337,7 +372,24 @@ int CB_Cmp(CBigInt *src, CBigInt *A) {
 	return 0;
 }
 
-int CB_Cmpi(CBigInt *src, unsigned long A) {
+int CB_Cmpi(CBigInt *src, int32_t A) {
+	if (src->m_signed == -1) {
+		return -1;
+	}
+
+	if (src->m_nLength == 1) {
+		int64_t val = src->m_ulValue[0];
+		if (src->m_signed == -1) {
+			val = -val;
+		}
+		return val == A ? 0 : (val > A ? 1 : -1);
+	}
+	else {
+		return 1;
+	}
+}
+
+int CB_Cmpu(CBigInt *src, uint32_t A) {
 	if (src->m_signed == -1) {
 		return -1;
 	}
@@ -361,17 +413,39 @@ void CB_Mov(CBigInt *src, CBigInt *dst) {
 	memcpy(dst->m_ulValue, src->m_ulValue, sizeof(dst->m_ulValue));
 }
 
-void CB_Movi(unsigned __int64 A, CBigInt *dst) {
+void CB_Movu(uint64_t A, CBigInt *dst) {
 	memset(dst->m_ulValue, 0, sizeof(dst->m_ulValue));
-	if (A > 0xffffffff){
+	if (A > 0xffffffff) {
 		dst->m_nLength = 2;
 		dst->m_ulValue[1] = (unsigned long)(A >> 32);
 		dst->m_ulValue[0] = (unsigned long)A;
-	} else {
+	}
+	else {
 		dst->m_nLength = 1;
 		dst->m_ulValue[0] = (unsigned long)A;
 	}
 	dst->m_signed = 0;
+}
+
+void CB_Movi(int64_t A, CBigInt *dst) {
+	memset(dst->m_ulValue, 0, sizeof(dst->m_ulValue));
+	if (A < 0) {
+		dst->m_signed = -1;
+		A = -A;
+	}
+	else {
+		dst->m_signed = 0;
+	}
+
+	if (A > 0xffffffff) {
+		dst->m_nLength = 2;
+		dst->m_ulValue[1] = (unsigned long)(A >> 32);
+		dst->m_ulValue[0] = (unsigned long)A;
+	}
+	else {
+		dst->m_nLength = 1;
+		dst->m_ulValue[0] = (unsigned long)A;
+	}
 }
 
 /****************************************************************************************
@@ -384,68 +458,99 @@ void CB_Add(CBigInt *src, CBigInt *A, CBigInt *dst)
 	if (src->m_signed == -1 && A->m_signed != -1) {
 		CBigInt _src;
 		CB_Abs(src, &_src);
-		CB_Sub(A, &_src, dst);
-		return;
+		CB_Sub(A, &_src, dst);  //  -src + A = A - src
 	}
-	if (src->m_signed != -1 && A->m_signed == -1) {
+	else if (src->m_signed != -1 && A->m_signed == -1) {
 		CBigInt _A;
 		CB_Abs(A, &_A);
-		CB_Sub(src, &_A, dst);
-		return;
+		CB_Sub(src, &_A, dst);   //  src + -A = src - A
 	}
-	if (src->m_signed == -1 && A->m_signed == -1) {
+	else if (src->m_signed == -1 && A->m_signed == -1) {
 		CBigInt _src, _A;
 		CB_Abs(src, &_src);
 		CB_Abs(A, &_A);
-		CB_Add(&_src, &_A, dst);
+		CB_Add(&_src, &_A, dst);   //  -src + -A = -(src + A)
 		CB_S_Neg(dst);
-		return;
 	}
+	else {
+		//  src A 一定都为 正数
+		if (A->m_nLength == 1) {
+			CB_Addu(src, A->m_ulValue[0], dst);
+			return;
+		}
 
-	if (A->m_nLength == 1) {
-		CB_Addi(src, A->m_ulValue[0], dst);
-		return;
+		CB_Mov(src, dst);
+		unsigned int carry = 0;
+		unsigned __int64 sum = 0;
+		if (dst->m_nLength < A->m_nLength) {
+			dst->m_nLength = A->m_nLength;
+		}
+		for (int i = 0; i < dst->m_nLength; i++) {
+			sum = A->m_ulValue[i];
+			sum = sum + dst->m_ulValue[i] + carry;
+			dst->m_ulValue[i] = (unsigned long)sum;
+			carry = (unsigned int)(sum >> 32);
+		}
+		dst->m_ulValue[dst->m_nLength] = carry;
+		dst->m_nLength += carry;
 	}
-
-	CB_Mov(src, dst);
-	unsigned int carry = 0;
-	unsigned __int64 sum = 0;
-	if (dst->m_nLength < A->m_nLength) {
-		dst->m_nLength = A->m_nLength;
-	}
-	for (int i = 0; i < dst->m_nLength; i++) {
-		sum = A->m_ulValue[i];
-		sum = sum + dst->m_ulValue[i] + carry;
-		dst->m_ulValue[i] = (unsigned long)sum;
-		carry = (unsigned int)(sum >> 32);
-	}
-	dst->m_ulValue[dst->m_nLength] = carry;
-	dst->m_nLength += carry;
 }
 
-void CB_Addi(CBigInt *src, unsigned long A, CBigInt *dst) {
+void CB_Addi(CBigInt *src, int32_t A, CBigInt *dst) {
+	if (A == 0) {
+		CB_Mov(src, dst);
+		return;
+	}
+	
 	if (src->m_signed == -1) {
 		CBigInt _src;
 		CB_Abs(src, &_src);
-		CB_Subi(&_src, A, dst);
+		if (A > 0) {
+			CB_Subu(&_src, A, dst);  //  -src + A = -(src - A)
+		}
+		else {
+			CB_Addu(&_src, -A, dst);  //  -src + -A = -(src + A)
+		}
 		CB_S_Neg(dst);
+	}
+	else {
+		if (A < 0) {
+			CB_Subu(&src, -A, dst);   //  src + -A = src - A
+		}
+		else {
+			//  src A 一定都为 正数
+			CB_Addu(src, A, dst);
+		}
+	}
+}
+void CB_Addu(CBigInt *src, uint32_t A, CBigInt *dst) {
+	if (A == 0) {
+		CB_Mov(src, dst);
 		return;
 	}
 
-	CB_Mov(src, dst);
-	unsigned __int64 sum;
-	sum = dst->m_ulValue[0];
-	sum += A;
-	dst->m_ulValue[0] = (unsigned long)sum;
-	if (sum > 0xffffffff) {
-		unsigned int i = 1;
-		while (dst->m_ulValue[i] == 0xffffffff) { 
-			dst->m_ulValue[i] = 0;
-			i++;
-		}
-		dst->m_ulValue[i]++;
-		if (dst->m_nLength == i) {
-			dst->m_nLength++;
+	if (src->m_signed == -1) {
+		CBigInt _src;
+		CB_Abs(src, &_src);
+		CB_Subu(&_src, A, dst);    //  -src  + A = -(src - A)
+		CB_S_Neg(dst);
+	}
+	else {
+		CB_Mov(src, dst);
+		unsigned __int64 sum;
+		sum = dst->m_ulValue[0];
+		sum += A;
+		dst->m_ulValue[0] = (unsigned long)sum;
+		if (sum > 0xffffffff) {
+			unsigned int i = 1;
+			while (dst->m_ulValue[i] == 0xffffffff) {
+				dst->m_ulValue[i] = 0;
+				i++;
+			}
+			dst->m_ulValue[i]++;
+			if (dst->m_nLength == i) {
+				dst->m_nLength++;
+			}
 		}
 	}
 }
@@ -456,55 +561,138 @@ void CB_Addi(CBigInt *src, unsigned long A, CBigInt *dst) {
 返回值：无，dst 被赋值为 src-A
 ****************************************************************************************/
 void CB_Sub(CBigInt *src, CBigInt *A, CBigInt *dst) {
-	if (A->m_nLength == 1) {
-		 CB_Subi(src, A->m_ulValue[0], dst);
-		 return;
+	if (src->m_signed == -1 && A->m_signed == -1) {
+		// -src - -A = A - src
+		CBigInt _src, _A;
+		CB_Abs(src, &_src);
+		CB_Abs(A, &_A);
+		CB_Sub(&_A, &_src, dst);
 	}
-
-	CB_Mov(src, dst);
-	if (CB_Cmp(dst, A) <= 0) {
-		CB_Movi(0, dst);
-		return ;
+	else if (src->m_signed == -1 && A->m_signed != -1) {
+		// -src - A = -(src + A)
+		CBigInt _src;
+		CB_Abs(src, &_src);
+		CB_Add(&_src, A, dst);
+		CB_S_Neg(dst);
 	}
+	else if (src->m_signed != -1 && A->m_signed == -1) {
+		// src - -A = src + A
+		CBigInt _A;
+		CB_Abs(A, &_A);
+		CB_Add(src, &_A, dst);
+	}
+	else {
+		//  src A 一定都为 正数
 
-	unsigned int carry = 0;
-	unsigned __int64 num;
-	for (int i = 0; i < src->m_nLength; i++) {
-		if (src->m_ulValue[i] > A->m_ulValue[i] || (src->m_ulValue[i] == A->m_ulValue[i] && carry == 0))
-		{
-			dst->m_ulValue[i] = src->m_ulValue[i] - carry - A->m_ulValue[i];
-			carry = 0;
-		} else{
-			num = 0x100000000 + src->m_ulValue[i];
-			dst->m_ulValue[i] = (unsigned long)(num - carry - A->m_ulValue[i]);
-			carry = 1;
+		if (A->m_nLength == 1) {
+			CB_Subu(src, A->m_ulValue[0], dst);
+			return;
 		}
-	}
-	while (dst->m_ulValue[dst->m_nLength - 1] == 0) {
-		dst->m_nLength--;
+		int cmp = CB_Cmp(src, A);
+		if (cmp == 0) {   //  src == A
+			CB_Movu(0, dst);
+			return;
+		}
+
+		if (cmp < 0) {   //  src < A
+			CB_Sub(A, src, dst);   //  src - A = -(A - src)
+			CB_S_Neg(dst);
+			return;
+		}
+
+		//  一定 src > A
+		CB_Mov(src, dst);
+		unsigned int carry = 0;
+		unsigned __int64 num;
+		for (int i = 0; i < src->m_nLength; i++) {
+			if (src->m_ulValue[i] > A->m_ulValue[i] || (src->m_ulValue[i] == A->m_ulValue[i] && carry == 0))
+			{
+				dst->m_ulValue[i] = src->m_ulValue[i] - carry - A->m_ulValue[i];
+				carry = 0;
+			}
+			else {
+				num = 0x100000000 + src->m_ulValue[i];
+				dst->m_ulValue[i] = (unsigned long)(num - carry - A->m_ulValue[i]);
+				carry = 1;
+			}
+		}
+		AUTO_FIX_ZERO(dst);
 	}
 }
 
-void CB_Subi(CBigInt *src, unsigned long A, CBigInt *dst) {
-	CB_Mov(src, dst);
-	if (dst->m_ulValue[0] >= A) {
-		dst->m_ulValue[0] -= A;
+void CB_Subi(CBigInt *src, int32_t A, CBigInt *dst) {
+	if (A == 0) {
+		CB_Mov(src, dst);
 		return;
 	}
-	if (dst->m_nLength == 1) { 
-		CB_Movi(0, dst);
-		return ; 
+
+	if (src->m_signed == -1) {
+		CBigInt _src;
+		CB_Abs(src, &_src);
+		if (A > 0) {
+			CB_Addu(&_src, A, dst);  //  -src - A = -(src + A)
+		}
+		else {
+			CB_Subu(&_src, -A, dst);  //  -src - -A = -(src - A)
+		}
+		CB_S_Neg(dst);
 	}
-	unsigned __int64 num = 0x100000000 + dst->m_ulValue[0];
-	dst->m_ulValue[0] = (unsigned long)(num - A);
-	int i = 1;
-	while (dst->m_ulValue[i] == 0) { 
-		dst->m_ulValue[i] = 0xffffffff; 
-		i++; 
+	else {
+		if (A < 0) {
+			CB_Addu(src, -A, dst);  // src - -A = src + A
+		}
+		else {
+			//  src A 一定都为 正数
+			CB_Subu(src, A, dst);
+		}
 	}
-	dst->m_ulValue[i]--;
-	if (dst->m_ulValue[i] == 0) {
-		dst->m_nLength--;
+}
+void CB_Subu(CBigInt *src, uint32_t A, CBigInt *dst) {
+	if (A == 0) {
+		CB_Mov(src, dst);
+		return;
+	}
+
+	if (src->m_signed == -1) {
+		CBigInt _src;
+		CB_Abs(src, &_src);
+		CB_Add(&_src, A, dst);  //  -src - A = -(src + A)
+		CB_S_Neg(dst);
+	}
+	else {
+		//  src A 一定都为 正数
+		int cmp = CB_Cmpu(src, A);
+		if (cmp == 0) {   //  src == A
+			CB_Movu(0, dst);
+			return;
+		}
+
+		if (cmp < 0) {   //  src < A
+			CBigInt _A;
+			CB_Movu(A, &_A);
+			CB_Sub(&_A, src, dst);   //  src - A = -(A - src)
+			CB_S_Neg(dst);
+			return;
+		}
+
+		//  一定 src > A
+		CB_Mov(src, dst);
+		if (dst->m_ulValue[0] >= A) {
+			dst->m_ulValue[0] -= A;
+			return;
+		}
+
+		unsigned __int64 num = 0x100000000 + dst->m_ulValue[0];
+		dst->m_ulValue[0] = (unsigned long)(num - A);
+		int i = 1;
+		while (dst->m_ulValue[i] == 0) {
+			dst->m_ulValue[i] = 0xffffffff;
+			i++;
+		}
+		dst->m_ulValue[i]--;
+		if (dst->m_ulValue[i] == 0) {
+			dst->m_nLength--;
+		}
 	}
 }
 
@@ -514,12 +702,30 @@ void CB_Subi(CBigInt *src, unsigned long A, CBigInt *dst) {
 返回值：无，dst 被赋值为 src*A
 ****************************************************************************************/
 void CB_Mul(CBigInt *src, CBigInt *A, CBigInt *dst) {
-	if (A->m_nLength == 1) {
-		 CB_Muli(src, A->m_ulValue[0], dst);
-		 return;
+	if (CB_IsZero(src) || CB_IsZero(A)) {
+		CB_Movu(0, dst);
+		return;
 	}
 
-	CB_Movi(0, dst);
+	if (A->m_nLength == 1) {
+		CB_Mulu(src, A->m_ulValue[0], dst);
+		if (A->m_signed == -1) {
+			CB_S_Neg(dst);
+		}
+		return;
+	}
+	if (src->m_nLength == 1) {
+		CB_Mulu(A, src->m_ulValue[0], dst);
+		if (src->m_signed == -1) {
+			CB_S_Neg(dst);
+		}
+		return;
+	}
+
+	int s = (src->m_signed != -1 && A->m_signed != -1) || (src->m_signed == -1 && A->m_signed == -1) ? 0 : -1;
+
+	// 优化  下面计算  src  A  都不涉及到 符号变量  所以不用复制数据
+	CB_Movu(0, dst);
 	unsigned __int64 sum, mul = 0, carry = 0;
 	dst->m_nLength = src->m_nLength + A->m_nLength - 1;
 	for (int i = 0; i < dst->m_nLength; i++) {
@@ -541,10 +747,24 @@ void CB_Mul(CBigInt *src, CBigInt *A, CBigInt *dst) {
 		dst->m_nLength++; 
 		dst->m_ulValue[dst->m_nLength - 1] = (unsigned long)carry; 
 	}
+	if (s == -1) {
+		dst->m_signed = -1;
+	}
+	AUTO_FIX_ZERO(dst);
 }
 
-void CB_Muli(CBigInt *src, unsigned long A, CBigInt *dst) {
-	CB_Mov(src, dst);
+void CB_Muli(CBigInt *src, int32_t A, CBigInt *dst) {
+	if (CB_IsZero(src) || A == 0) {
+		CB_Movu(0, dst);
+		return;
+	}
+
+	int s = (src->m_signed != -1 && A > 0) || (src->m_signed == -1 && A < 0) ? 0 : -1;
+
+	if (A < 0) {
+		A = -A;
+	}
+	CB_Abs(src, dst);
 	unsigned __int64 mul;
 	unsigned long carry = 0;
 	for (int i = 0; i < src->m_nLength; i++) {
@@ -553,9 +773,37 @@ void CB_Muli(CBigInt *src, unsigned long A, CBigInt *dst) {
 		dst->m_ulValue[i] = (unsigned long)mul;
 		carry = (unsigned long)(mul >> 32);
 	}
-	if (carry) { 
-		dst->m_nLength++; 
-		dst->m_ulValue[dst->m_nLength - 1] = carry; 
+	if (carry) {
+		dst->m_nLength++;
+		dst->m_ulValue[dst->m_nLength - 1] = carry;
+	}
+	if (s == -1) {
+		dst->m_signed = -1;
+	}
+}
+void CB_Mulu(CBigInt *src, uint32_t A, CBigInt *dst) {
+	if (CB_IsZero(src) || A == 0) {
+		CB_Movu(0, dst);
+		return;
+	}
+
+	int s = src->m_signed != -1  ? 0 : -1;
+
+	CB_Abs(src, dst);
+	unsigned __int64 mul;
+	unsigned long carry = 0;
+	for (int i = 0; i < src->m_nLength; i++) {
+		mul = src->m_ulValue[i];
+		mul = mul * A + carry;
+		dst->m_ulValue[i] = (unsigned long)mul;
+		carry = (unsigned long)(mul >> 32);
+	}
+	if (carry) {
+		dst->m_nLength++;
+		dst->m_ulValue[dst->m_nLength - 1] = carry;
+	}
+	if (s == -1) {
+		dst->m_signed = -1;
 	}
 }
 
@@ -565,23 +813,37 @@ void CB_Muli(CBigInt *src, unsigned long A, CBigInt *dst) {
 返回值：无，dst 被赋值为 src / A
 ****************************************************************************************/
 void CB_Div(CBigInt *src, CBigInt *A, CBigInt *dst) {
-	if (A->m_nLength == 1) {
-		 CB_Divi(src, A->m_ulValue[0], dst);
-		 return;
+	if (CB_IsZero(A) || CB_IsZero(src)) {
+		CB_Movu(0, dst);  //  src / 0  和  0 / A 强制都设置为 0
+		return;
 	}
 
-	CB_Movi(0, dst);
-	CBigInt Y, Z;
-	CB_Mov(src, &Y);
-	CB_Movi(0, &Z);
+	if (A->m_nLength == 1) {
+		 CB_Divu(src, A->m_ulValue[0], dst);
+		 if (A->m_signed == -1) {
+			 CB_S_Neg(dst);
+		 }
+		 return;
+	}
+	int s = (src->m_signed != -1 && A->m_signed != -1) || (src->m_signed == -1 && A->m_signed == -1) ? 0 : -1;
+
+	CB_Movu(0, dst);
+	CBigInt A_, Y, Z;
+
+	CB_Abs(src, &Y);
+	CB_Abs(A, &A_);
+	CB_Movu(0, &Z);
 	unsigned i, len;
 	unsigned __int64 num, div;
-	while (CB_Cmp(&Y, A) >= 0) {
+	while (CB_Cmp(&Y, &A_) >= 0) {
 		div = Y.m_ulValue[Y.m_nLength - 1];
-		num = A->m_ulValue[A->m_nLength - 1];
-		len = Y.m_nLength - A->m_nLength;
+		num = A_.m_ulValue[A_.m_nLength - 1];
+		len = Y.m_nLength - A_.m_nLength;
 		if (div == num && len == 0) { 
 		    CB_S_Addi(dst, 1);
+			if (s == -1) {
+				dst->m_signed = -1;
+			}
 			return; 
 		}
 		if (div <= num && len) { 
@@ -589,7 +851,7 @@ void CB_Div(CBigInt *src, CBigInt *A, CBigInt *dst) {
 			div = (div << 32) + Y.m_ulValue[Y.m_nLength - 2]; 
 		}
 		div = div / (num + 1);
-		CB_Movi(div, &Z);
+		CB_Movu(div, &Z);
 		if (len) {
 			Z.m_nLength += len;
 			for (i = Z.m_nLength - 1; i >= len; i--) {
@@ -600,16 +862,42 @@ void CB_Div(CBigInt *src, CBigInt *A, CBigInt *dst) {
 			}
 		}
 		CB_S_Add(dst, &Z);
-		CB_S_Mul(&Z, A);
+		CB_S_Mul(&Z, &A_);
 		CB_S_Sub(&Y, &Z);
+	}
+	if (s == -1) {
+		dst->m_signed = -1;
 	}
 }
 
-void CB_Divi(CBigInt *src, unsigned long A, CBigInt *dst) {
-	CB_Mov(src, dst);
-	if (dst->m_nLength == 1) { 
-		dst->m_ulValue[0] = dst->m_ulValue[0] / A; 
-		return ; 
+void CB_Divi(CBigInt *src, int32_t A, CBigInt *dst) {
+	if (A == 0 || CB_IsZero(src)) {
+		CB_Movu(0, dst);   //  src / 0  和  0 / A 强制都设置为 0
+		return;
+	}
+
+	if (A < 0) {
+		CB_Divu(src, -A, dst);
+		CB_S_Neg(dst);
+	}
+	else {
+		CB_Divu(src, A, dst);
+	}
+}
+void CB_Divu(CBigInt *src, uint32_t A, CBigInt *dst) {
+	if (A == 0 || CB_IsZero(src)) {
+		CB_Movu(0, dst);   //  src / 0  和  0 / A 强制都设置为 0
+		return;
+	}
+
+	int s = src->m_signed == -1 ? -1 : 0;
+	CB_Abs(src, dst);
+	if (dst->m_nLength == 1) {
+		dst->m_ulValue[0] = dst->m_ulValue[0] / A;
+		if (s == -1) {
+			dst->m_signed = -1;
+		}
+		return;
 	}
 	unsigned __int64 div, mul;
 	unsigned long carry = 0;
@@ -623,45 +911,54 @@ void CB_Divi(CBigInt *src, unsigned long A, CBigInt *dst) {
 	if (dst->m_ulValue[dst->m_nLength - 1] == 0) {
 		dst->m_nLength--;
 	}
+	if (s == -1) {
+		dst->m_signed = -1;
+	}
 }
 
 /****************************************************************************************
-大数求模
+大数求模  符号 选择 python 模式
 调用形式：CB_Mod(src, A, dst)
 返回值：无，dst 被赋值为 src % A
 ****************************************************************************************/
 void CB_Mod(CBigInt *src, CBigInt *A, CBigInt *dst) {
 	int n = CB_Cmp(src, A);
-	if (n < 0) {
+	if (n = 0) {  // src == A  返回  0
+		CB_Movu(0, dst);
+		return ;
+	}
+
+	if (n < 0) {  //  src < A 直接返回  src
 		CB_Mov(src, dst);
-		return ;
+		return;
 	}
-	if (n = 0) {
-		CB_Movi(0, dst);
-		return ;
-	}
-	CB_Mov(src, dst);
-	CBigInt Y;
+
+
+	CBigInt Y, _A;
+
+	CB_Abs(src, dst);
+	CB_Abs(A, &_A);
+
 	unsigned __int64 div, num;
 	unsigned long carry = 0;
 	unsigned i, len;
 	while (1) {
 		div = dst->m_ulValue[dst->m_nLength - 1];
-		num = A->m_ulValue[A->m_nLength - 1];
-		len = dst->m_nLength - A->m_nLength;  // 一定大于等于0
+		num = _A.m_ulValue[_A.m_nLength - 1];
+		len = dst->m_nLength - _A.m_nLength;  // 一定大于等于0
 		if (div <= num) { 
-			if (dst->m_nLength > A->m_nLength) {
+			if (dst->m_nLength > _A.m_nLength) {
 				len--;
 				div = (div << 32) + dst->m_ulValue[dst->m_nLength - 2];
 			}
-			if (dst->m_nLength == A->m_nLength && dst->m_nLength > 1) {
+			if (dst->m_nLength == _A.m_nLength && dst->m_nLength > 1) {
 				div = (div << 32) + dst->m_ulValue[dst->m_nLength - 2];
-				num = (num << 32) + A->m_ulValue[A->m_nLength - 2];
+				num = (num << 32) + _A.m_ulValue[_A.m_nLength - 2];
 			}
 		}
 		div = div / (num + 1);
-		CB_Movi(div, &Y);
-		CB_S_Mul(&Y, A);
+		CB_Movu(div, &Y);
+		CB_S_Mul(&Y, &_A);
 		if (len) {
 			Y.m_nLength += len;
 			for (i = Y.m_nLength - 1; i >= len; i--) {
@@ -673,18 +970,27 @@ void CB_Mod(CBigInt *src, CBigInt *A, CBigInt *dst) {
 		}
 
 		CB_S_Sub(dst, &Y);
-		n = CB_Cmp(dst, A);
+		n = CB_Cmp(dst, &_A);
 		if (n == 0) { 
-			CB_Movi(0, dst);
+			CB_Movu(0, dst);
 			return ; 
 		}
 		if (n < 0) {
 			return ;
 		}
 	}
+
 }
 
-unsigned long CB_Modi(CBigInt *src, unsigned long A){
+int32_t CB_Modi(CBigInt *src, int32_t A) {
+	if (A > 0) {
+		return CB_Modu(src, A);
+	}
+	else {
+		return CB_Modu(src, -A);
+	}
+}
+uint32_t CB_Modu(CBigInt *src, uint32_t A){
 	if (src->m_nLength == 1) {
 		return src->m_ulValue[0] % A;
 	}
@@ -748,8 +1054,8 @@ void CB_ExtGcd(CBigInt *src, CBigInt *A, CBigInt *x, CBigInt *y) {
 	}
 
 	if (CB_Cmpi(A, 0) == 0) {
-		CB_Movi(1, x);
-		CB_Movi(0, y);
+		CB_Movu(1, x);
+		CB_Movu(0, y);
 		return;
 	}
 	else {
@@ -776,12 +1082,12 @@ void CB_Sqrt(CBigInt *src, CBigInt *dst) {
 	n = src->m_ulValue[src->m_nLength - 1];
 	n = (unsigned long)sqrt((double)n);
 	if (src->m_nLength == 1) {
-		CB_Movi(n, dst);
+		CB_Movu(n, dst);
 		return;
 	}
 	CBigInt M, N, tmp;
-	CB_Movi(0, &M);
-	CB_Movi(0, &N);
+	CB_Movu(0, &M);
+	CB_Movu(0, &N);
 	m = n + 1;
 	N.m_nLength = src->m_nLength / 2;
 	M.m_nLength = N.m_nLength;
@@ -823,7 +1129,7 @@ void CB_Sqrt(CBigInt *src, CBigInt *dst) {
 ****************************************************************************************/
 void CB_Power(CBigInt *src, unsigned int n, CBigInt *dst) {
 	if (n == 0) {
-		CB_Movi(1, dst);
+		CB_Movu(1, dst);
 		return;
 	}
 	CB_Mov(src, dst);
@@ -849,10 +1155,14 @@ void CB_Power(CBigInt *src, unsigned int n, CBigInt *dst) {
 返回值：N被赋值为相应大数
 ****************************************************************************************/
 void CB_Get(unsigned char *input, unsigned int len, unsigned int radix, CBigInt *dst) {
-	int k;
-	CB_Movi(0, dst);
+	int k, s = 0;
+	CB_Movu(0, dst);
 	for (unsigned int i = 0; i < len; i++) {
-    	CB_S_Muli(dst, radix);
+		if (input[i] == '-') {
+			s = -1;
+			continue;
+		}
+    	CB_S_Mulu(dst, radix);
 		if (input[i] >= '0' && input[i] <= '9') {
 			k = input[i] - 48;
 		}else if ((input[i] >= 'A') && (input[i] <= 'Z')) {
@@ -864,6 +1174,8 @@ void CB_Get(unsigned char *input, unsigned int len, unsigned int radix, CBigInt 
 		}
 		CB_S_Addi(dst, k);
 	}
+	dst->m_signed = s;
+	AUTO_FIX_ZERO(dst);
 }
 
 /****************************************************************************************
@@ -880,11 +1192,17 @@ void CB_Put(CBigInt *src, unsigned char *output, unsigned int len, unsigned int 
 		output[1] = '\0';
 		return;
 	}
-	int a;
+	int a, s = 0;
 	unsigned int idx = 0;
 	char ch;
 	CBigInt tmp;
 	CB_Mov(src, &tmp);
+	if (tmp.m_signed == -1) {
+		output[0] = '-';
+		idx = 1;
+		s = -1;
+		tmp.m_signed = 0;
+	}
 	while (tmp.m_ulValue[tmp.m_nLength - 1] > 0)
 	{
 		a = CB_Modi(&tmp, radix);
@@ -898,8 +1216,10 @@ void CB_Put(CBigInt *src, unsigned char *output, unsigned int len, unsigned int 
     if(idx < len - 1){
 	    output[idx] = '\0';
     }
+	int si = s == -1 ? 1 : 0;
+	idx = idx + si;
 	a = (idx + 1) / 2;
-	for (int i = 0; i < a; i++) {
+	for (int i = si; i < a; i++) {
 		ch = output[i];
 		output[i] = output[idx - 1 - i];
 		output[idx - 1 - i] = ch;
@@ -916,8 +1236,8 @@ void CB_ModInv(CBigInt *src, CBigInt *A, CBigInt *dst) {
 	int x, y;
 	CB_Mov(A, &M);
 	CB_Mov(src, &E);
-	CB_Movi(0, dst);
-	CB_Movi(1, &Y);
+	CB_Movu(0, dst);
+	CB_Movu(1, &Y);
 	x = y = 1;
 	while (E.m_nLength != 1 || E.m_ulValue[0] != 0) {
 		CB_Div(&M, &E, &I);
@@ -952,7 +1272,7 @@ void CB_ModInv(CBigInt *src, CBigInt *A, CBigInt *dst) {
 ****************************************************************************************/
 void CB_ModMul(CBigInt *src, CBigInt *A, CBigInt *B, CBigInt *dst) {
 	unsigned long n = src->m_ulValue[src->m_nLength - 1];
-	CB_Muli(A, n, dst);
+	CB_Mulu(A, n, dst);
 	int i, j;
 	CBigInt tmp;
 	CB_S_Mod(dst, B);
@@ -962,7 +1282,7 @@ void CB_ModMul(CBigInt *src, CBigInt *A, CBigInt *B, CBigInt *dst) {
 		}
 		dst->m_ulValue[0] = 0;
 		dst->m_nLength++;
-		CB_Muli(A, src->m_ulValue[i], &tmp);
+		CB_Mulu(A, src->m_ulValue[i], &tmp);
 		CB_S_Add(dst, &tmp);
 		CB_S_Mod(dst, B);
 	}
@@ -978,7 +1298,7 @@ void CB_MonPro(CBigInt *src, CBigInt *A, CBigInt *B, unsigned long n, CBigInt *d
 	unsigned int i, j, k, idx;
 	unsigned long m, carry;
 	unsigned __int64 sum;
-	CB_Movi(0, dst);
+	CB_Movu(0, dst);
 
 	memset(T, 0, sizeof(T));
 	k = B->m_nLength;
@@ -1016,9 +1336,9 @@ void CB_MonPro(CBigInt *src, CBigInt *A, CBigInt *B, unsigned long n, CBigInt *d
 	for (i = 0; i <= k; i++) {
 		dst->m_ulValue[i] = T[i + k];
 	}
-	while (dst->m_ulValue[dst->m_nLength - 1] == 0) {
-		dst->m_nLength--;
-	}
+	
+	AUTO_FIX_ZERO(dst);
+	
 	if (CB_Cmp(dst, B) >= 0) {
 		CB_S_Sub(dst, B);
 	}
@@ -1033,7 +1353,7 @@ void CB_ModExp(CBigInt *src, CBigInt *A, CBigInt *B, CBigInt *dst) {
 	CBigInt Y;
 	int i, k;
 	unsigned long n;
-	CB_Movi(0, &Y);
+	CB_Movu(0, &Y);
 
 	k = A->m_nLength * 32 - 32;
 	n = A->m_ulValue[A->m_nLength - 1];
@@ -1043,11 +1363,11 @@ void CB_ModExp(CBigInt *src, CBigInt *A, CBigInt *B, CBigInt *dst) {
 	}
 	Y.m_nLength = 2;
 	Y.m_ulValue[1] = 1;
-	CB_Movi(B->m_ulValue[0], dst);
+	CB_Movu(B->m_ulValue[0], dst);
 	CB_S_ModInv(dst, &Y);
 	CB_S_Sub_Reverse(dst, &Y);
 	n = dst->m_ulValue[0];
-	CB_Movi(0, &Y);
+	CB_Movu(0, &Y);
 	Y.m_nLength = B->m_nLength + 1;
 	Y.m_ulValue[Y.m_nLength - 1] = 1;
 	CB_Sub(&Y, B, dst);
@@ -1058,7 +1378,7 @@ void CB_ModExp(CBigInt *src, CBigInt *A, CBigInt *B, CBigInt *dst) {
 			CB_S_MonPro(dst, &Y, B, n);
 		}
 	}
-	CB_Movi(1, &Y);
+	CB_Movu(1, &Y);
 	CB_S_MonPro(dst, &Y, B, n);
 }
 
@@ -1087,7 +1407,7 @@ int CB_TestPrime(CBigInt *src) {
 	K.m_ulValue[0]--;
 	for (i = 0; i < 5; i++) {
 		pass = 0;
-		CB_Movi(rand(), &A);
+		CB_Movu(rand(), &A);
 		CB_Mov(&K, &S);
 		while ((S.m_ulValue[0] & 1) == 0) {
 			CB_S_Divi(&S, 2);
@@ -1114,7 +1434,7 @@ int CB_TestPrime(CBigInt *src) {
 ****************************************************************************************/
 void CB_RandInit(int len, CBigInt *dst, int mask) {
 	int i;
-	CB_Movi(0, dst);
+	CB_Movu(0, dst);
 	dst->m_nLength = len;
 	for (i = 1; i < dst->m_nLength; i++) {
 		dst->m_ulValue[i] = rand() * 0x10000 + rand();
@@ -1133,7 +1453,7 @@ void CB_RandInit(int len, CBigInt *dst, int mask) {
 ****************************************************************************************/
 void CB_FindPrime(int len, CBigInt *dst) {
 	int i;
-	CB_Movi(0, dst);
+	CB_Movu(0, dst);
 	dst->m_nLength = len;
 	for (i = 1; i < dst->m_nLength; i++) {
 		dst->m_ulValue[i] = rand() * 0x10000 + rand();
@@ -1161,7 +1481,7 @@ begin:
 	}
 
 	for (i = 0; i < 5; i++) {
-		CB_Movi(rand(), &A);
+		CB_Movu(rand(), &A);
 		CB_S_ModExp(&A, &S, dst);
 		A.m_ulValue[0]++;
 		if ((A.m_nLength != 1 || A.m_ulValue[0] != 2) && CB_Cmp(dst, &A) != 0) {

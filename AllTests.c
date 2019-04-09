@@ -277,121 +277,250 @@ static char* bigint_str_list[] = {
 	"12345567890123456123456789012345623456789012345612345678901234561234567890123456123456789012345612345678901234561234567890123456",
 	"123456789123456789012345612345678901234561890123456123456789012345612345678234561234567890123456123456789012345612345678901234561234567890123456",
 	"123456789012312345678901234561234567890123456123456789012345612345678989012345612345678901234561234567890123456123456789012345612345678901234561234567890123456",
-	"1234567890123451234567890123456123456789012345612345678901234561201234561234567890123456123456789012345612345678901234561234567890123456123456789012345612345678901234566",
+	"1234567890123451234567890123456123456789012345612345678901234561201234561234567890123456123456789012345612345678901234561234567890123456123456789012345612345678901234566",	
+	"-0",
+	"-123",
+	"-123456",
+	"-123456789",
+	"-1234567890123",
+	"-1234567890123456",
+	"-12312345678901234561234567890123456",
+	"-1234561234567890125678901234561234567890123456",
+	"-123456789123456789012345901212345678901234561234567890123456",
+	"-12345678901231234561234567890123456156789012345612345678901234561234567890123456",
+	"-123456789012345612345678901234564567890123456123456789012345612345678901234561234567890123456",
+	"-123123456789012345612345678901234561234901234561234567890123456123456789012345612345678901234561234567890123456",
+	"-12345567890123456123456789012345623456789012345612345678901234561234567890123456123456789012345612345678901234561234567890123456",
+	"-123456789123456789012345612345678901234561890123456123456789012345612345678234561234567890123456123456789012345612345678901234561234567890123456",
+	"-123456789012312345678901234561234567890123456123456789012345612345678989012345612345678901234561234567890123456123456789012345612345678901234561234567890123456",
+	"-1234567890123451234567890123456123456789012345612345678901234561201234561234567890123456123456789012345612345678901234561234567890123456123456789012345612345678901234566",
 };
 
 const static bigint_str_list_len = sizeof(bigint_str_list) / sizeof(bigint_str_list[0]);
 
 void Test_ckl_bigint_get_put(CuTest *tc) {
 	CBigInt A, B, C;
-	char *A_ = "14256756745435234521231231231231234353464";
-	char *B_ = "24256756745435234521231231231231234353464";
-	char *C_ = "342567567454352345212312312312312343534641";
-
-	CB_Get(A_, (int)strlen(A_), 10, &A);
-	CB_Get(B_, (int)strlen(B_), 10, &B);
-	CB_Get(C_, (int)strlen(C_), 10, &C);
-
 	int retint = 0;
 	unsigned char retstr[2048] = { 0 };
 
-	CB_Put(&A, retstr, 2048, 10);
-	CuAssertStrEquals(tc, A_, retstr);
-	CB_Put(&B, retstr, 2048, 10);
-	CuAssertStrEquals(tc, B_, retstr);
-	CB_Put(&C, retstr, 2048, 10);
-	CuAssertStrEquals(tc, C_, retstr);
+	{
+		char *A_ = "14256756745435234521231231231231234353464";
+		char *B_ = "24256756745435234521231231231231234353464";
+		char *C_ = "342567567454352345212312312312312343534641";
+
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
+
+		CB_Put(&A, retstr, 2048, 10);
+		CuAssertStrEquals(tc, A_, retstr);
+		CB_Put(&B, retstr, 2048, 10);
+		CuAssertStrEquals(tc, B_, retstr);
+		CB_Put(&C, retstr, 2048, 10);
+		CuAssertStrEquals(tc, C_, retstr);
+	}
+
+	{
+		char *A_ = "-14256756745435234521231231231231234353464";
+		char *B_ = "-24256756745435234521231231231231234353464";
+		char *C_ = "-342567567454352345212312312312312343534641";
+
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
+
+		CB_Put(&A, retstr, 2048, 10);
+		CuAssertStrEquals(tc, A_, retstr);
+		CB_Put(&B, retstr, 2048, 10);
+		CuAssertStrEquals(tc, B_, retstr);
+		CB_Put(&C, retstr, 2048, 10);
+		CuAssertStrEquals(tc, C_, retstr);
+	}
 
 	for (int i = 0; i < bigint_str_list_len; i++) {
 		CB_Get(bigint_str_list[i], (int)strlen(bigint_str_list[i]), 10, &A);
 		CB_Put(&A, retstr, 2048, 10);
-		CuAssertStrEquals(tc, bigint_str_list[i], retstr);
+		if (CB_IsZero(&A)) {
+			CuAssertStrEquals(tc, "0", retstr);
+		}
+		else {
+			CuAssertStrEquals(tc, bigint_str_list[i], retstr);
+		}
 	}
 }
 
 void Test_ckl_bigint_cmp(CuTest *tc) {
 	CBigInt A, B, C;
-	CB_Movi(1234, &A);
-	CB_Movi(5678, &B);
-	CB_Movi(91011, &C);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&A, &A));
-	CuAssertIntEquals(tc, -1, CB_Cmp(&A, &B));
-	CuAssertIntEquals(tc, 1, CB_Cmp(&B, &A));
-	CuAssertIntEquals(tc, -1, CB_Cmp(&A, &C));
-	CuAssertIntEquals(tc, 1, CB_Cmp(&C, &B));
+	{
+		CB_Movu(1234, &A);
+		CB_Movu(5678, &B);
+		CB_Movu(91011, &C);
 
-	char *A_ = "14256756745435234521231231231231234353464";
-	char *B_ = "24256756745435234521231231231231234353464";
-	char *C_ = "342567567454352345212312312312312343534641";
+		CuAssertIntEquals(tc, 0, CB_Cmp(&A, &A));
+		CuAssertIntEquals(tc, -1, CB_Cmp(&A, &B));
+		CuAssertIntEquals(tc, 1, CB_Cmp(&B, &A));
+		CuAssertIntEquals(tc, -1, CB_Cmp(&A, &C));
+		CuAssertIntEquals(tc, 1, CB_Cmp(&C, &B));
 
-	CB_Get(A_, (int)strlen(A_), 10, &A);
-	CB_Get(B_, (int)strlen(B_), 10, &B);
-	CB_Get(C_, (int)strlen(C_), 10, &C);
+		char *A_ = "14256756745435234521231231231231234353464";
+		char *B_ = "24256756745435234521231231231231234353464";
+		char *C_ = "342567567454352345212312312312312343534641";
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&A, &A));
-	CuAssertIntEquals(tc, -1, CB_Cmp(&A, &B));
-	CuAssertIntEquals(tc, 1, CB_Cmp(&B, &A));
-	CuAssertIntEquals(tc, -1, CB_Cmp(&A, &C));
-	CuAssertIntEquals(tc, 1, CB_Cmp(&C, &B));
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&A, &A));
+		CuAssertIntEquals(tc, -1, CB_Cmp(&A, &B));
+		CuAssertIntEquals(tc, 1, CB_Cmp(&B, &A));
+		CuAssertIntEquals(tc, -1, CB_Cmp(&A, &C));
+		CuAssertIntEquals(tc, 1, CB_Cmp(&C, &B));
+	}
+
+	{
+		CB_Movu(-1234, &A);
+		CB_Movu(-5678, &B);
+		CB_Movu(-91011, &C);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&A, &A));
+		CuAssertIntEquals(tc, 1, CB_Cmp(&A, &B));
+		CuAssertIntEquals(tc, -1, CB_Cmp(&B, &A));
+		CuAssertIntEquals(tc, 1, CB_Cmp(&A, &C));
+		CuAssertIntEquals(tc, -1, CB_Cmp(&C, &B));
+
+		char *A_ = "-14256756745435234521231231231231234353464";
+		char *B_ = "-24256756745435234521231231231231234353464";
+		char *C_ = "-342567567454352345212312312312312343534641";
+
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&A, &A));
+		CuAssertIntEquals(tc, 1, CB_Cmp(&A, &B));
+		CuAssertIntEquals(tc, -1, CB_Cmp(&B, &A));
+		CuAssertIntEquals(tc, 1, CB_Cmp(&A, &C));
+		CuAssertIntEquals(tc, -1, CB_Cmp(&C, &B));
+	}
+
 }
+
 
 void Test_ckl_bigint_add(CuTest *tc) {
 	CBigInt A, B, C, S, R;
 
-	char *A_ = "14256756745435234521231231231231234353464";
-	char *B_ = "24256756745435234521231231231231234353464";
-	char *C_ = "342567567454352345212312312312312343534641";
-	CB_Get(A_, (int)strlen(A_), 10, &A);
-	CB_Get(B_, (int)strlen(B_), 10, &B);
-	CB_Get(C_, (int)strlen(C_), 10, &C);
+	{
+		char *A_ = "14256756745435234521231231231231234353464";
+		char *B_ = "24256756745435234521231231231231234353464";
+		char *C_ = "342567567454352345212312312312312343534641";
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
 
-	CB_Add(&A, &B, &S);
-	char *R1_ = "38513513490870469042462462462462468706928";
-	CB_Get(R1_, (int)strlen(R1_), 10, &R);
+		CB_Add(&A, &B, &S);
+		char *R1_ = "38513513490870469042462462462462468706928";
+		CB_Get(R1_, (int)strlen(R1_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
 
-	CB_Add(&A, &C, &S);
-	char *R2_ = "356824324199787579733543543543543577888105";
-	CB_Get(R2_, (int)strlen(R2_), 10, &R);
+		CB_Add(&A, &C, &S);
+		char *R2_ = "356824324199787579733543543543543577888105";
+		CB_Get(R2_, (int)strlen(R2_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
 
-	CB_Add(&B, &C, &S);
-	char *R3_ = "366824324199787579733543543543543577888105";
-	CB_Get(R3_, (int)strlen(R3_), 10, &R);
+		CB_Add(&B, &C, &S);
+		char *R3_ = "366824324199787579733543543543543577888105";
+		CB_Get(R3_, (int)strlen(R3_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	}
+
+	{
+		char *A_ = "-56745435234521231256713245363464";
+		char *B_ = "24275674543341234566464";
+		char *C_ = "-345212312312310641";
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
+
+		CB_Add(&A, &B, &S);
+		char *R1_ = "-56745435210245556713372010797000";
+		CB_Get(R1_, (int)strlen(R1_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+
+		CB_Add(&A, &C, &S);
+		char *R2_ = "-56745435234521576469025557674105";
+		CB_Get(R2_, (int)strlen(R2_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+
+		CB_Add(&B, &C, &S);
+		char *R3_ = "24275329331028922255823";
+		CB_Get(R3_, (int)strlen(R3_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	}
 }
 
 void Test_ckl_bigint_sub(CuTest *tc) {
 	CBigInt A, B, C, S, R;
 
-	char *A_ = "914256756745435234521231231231231234353464";
-	char *B_ = "782425675674543523452123123123123123435346";
-	char *C_ = "342567567454352345212312312312312343534641";
-	CB_Get(A_, (int)strlen(A_), 10, &A);
-	CB_Get(B_, (int)strlen(B_), 10, &B);
-	CB_Get(C_, (int)strlen(C_), 10, &C);
+	{
+		char *A_ = "914256756745435234521231231231231234353464";
+		char *B_ = "782425675674543523452123123123123123435346";
+		char *C_ = "342567567454352345212312312312312343534641";
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
 
-	CB_Sub(&A, &B, &S);
-	char *R1_ = "131831081070891711069108108108108110918118";
-	CB_Get(R1_, (int)strlen(R1_), 10, &R);
+		CB_Sub(&A, &B, &S);
+		char *R1_ = "131831081070891711069108108108108110918118";
+		CB_Get(R1_, (int)strlen(R1_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
 
-	CB_Sub(&A, &C, &S);
-	char *R2_ = "571689189291082889308918918918918890818823";
-	CB_Get(R2_, (int)strlen(R2_), 10, &R);
+		CB_Sub(&A, &C, &S);
+		char *R2_ = "571689189291082889308918918918918890818823";
+		CB_Get(R2_, (int)strlen(R2_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
 
-	CB_Sub(&B, &C, &S);
-	char *R3_ = "439858108220191178239810810810810779900705";
-	CB_Get(R3_, (int)strlen(R3_), 10, &R);
+		CB_Sub(&B, &C, &S);
+		char *R3_ = "439858108220191178239810810810810779900705";
+		CB_Get(R3_, (int)strlen(R3_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	}
+
+	{
+		char *A_ = "-9142567567454352565486234464";
+		char *B_ = "7824256756745456751256756435346";
+		char *C_ = "-342567567453123156567641";
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
+
+		CB_Sub(&A, &B, &S);
+		char *R1_ = "-7833399324312911103822242669810";
+		CB_Get(R1_, (int)strlen(R1_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+
+		CB_Sub(&A, &C, &S);
+		char *R2_ = "-9142224999886899442329666823";
+		CB_Get(R2_, (int)strlen(R2_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+
+		CB_Sub(&B, &C, &S);
+		char *R3_ = "7824257099313024204379913002987";
+		CB_Get(R3_, (int)strlen(R3_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	}
 }
 
 void Test_ckl_bigint_mul(CuTest *tc) {
@@ -399,136 +528,285 @@ void Test_ckl_bigint_mul(CuTest *tc) {
 	int retint = 0;
 	unsigned char retstr[2048] = { 0 };
 
-	char *X_ = "231231231221231231233123435464";
-	char *Y_ = "142567567454352345123243534364";
-	CB_Get(X_, (int)strlen(X_), 10, &X);
-	CB_Get(Y_, (int)strlen(Y_), 10, &Y);
-	CB_Mul(&X, &Y, &Z);
+	{
+		char *X_ = "231231231221231231233123435464";
+		char *Y_ = "142567567454352345123243534364";
+		CB_Get(X_, (int)strlen(X_), 10, &X);
+		CB_Get(Y_, (int)strlen(Y_), 10, &Y);
+		CB_Mul(&X, &Y, &Z);
 
-	for (int i = 0; i < bigint_str_list_len; i++) {
-		CB_Get(bigint_str_list[i], (int)strlen(bigint_str_list[i]), 10, &A);
-		CB_Muli(&A, 2, &B);
-		CB_Add(&A, &A, &C);
+		for (int i = 0; i < bigint_str_list_len; i++) {
+			CB_Get(bigint_str_list[i], (int)strlen(bigint_str_list[i]), 10, &A);
+			CB_Muli(&A, 2, &B);
+			CB_Add(&A, &A, &C);
 
-		CuAssertIntEquals(tc, 0, CB_Cmp(&B, &C));
+			CuAssertIntEquals(tc, 0, CB_Cmp(&B, &C));
 
-		CB_Muli(&A, 3, &B);
-		CB_Add(&A, &A, &C);
-		CB_S_Add(&C, &A);
+			CB_Muli(&A, 3, &B);
+			CB_Add(&A, &A, &C);
+			CB_S_Add(&C, &A);
 
-		CuAssertIntEquals(tc, 0, CB_Cmp(&B, &C));
+			CuAssertIntEquals(tc, 0, CB_Cmp(&B, &C));
 
-		CB_Mul(&A, &Z, &B);
-		CB_Mul(&A, &X, &C);
-		CB_S_Mul(&C, &Y);
-		CuAssertIntEquals(tc, 0, CB_Cmp(&B, &C));
+			CB_Mul(&A, &Z, &B);
+			CB_Mul(&A, &X, &C);
+			CB_S_Mul(&C, &Y);
+			CuAssertIntEquals(tc, 0, CB_Cmp(&B, &C));
+		}
+	}
+
+	{
+		char *X_ = "-231231265756233123435464";
+		char *Y_ = "42565675565676783421354364";
+		CB_Get(X_, (int)strlen(X_), 10, &X);
+		CB_Get(Y_, (int)strlen(Y_), 10, &Y);
+		CB_Mul(&X, &Y, &Z);
+
+		for (int i = 0; i < bigint_str_list_len; i++) {
+			CB_Get(bigint_str_list[i], (int)strlen(bigint_str_list[i]), 10, &A);
+			CB_Muli(&A, 2, &B);
+			CB_Add(&A, &A, &C);
+
+			CuAssertIntEquals(tc, 0, CB_Cmp(&B, &C));
+
+			CB_Muli(&A, 3, &B);
+			CB_Add(&A, &A, &C);
+			CB_S_Add(&C, &A);
+
+			CuAssertIntEquals(tc, 0, CB_Cmp(&B, &C));
+
+			CB_Mul(&A, &Z, &B);
+			CB_Mul(&A, &X, &C);
+			CB_S_Mul(&C, &Y);
+			CuAssertIntEquals(tc, 0, CB_Cmp(&B, &C));
+		}
 	}
 }
 
 void Test_ckl_bigint_mul2(CuTest *tc) {
 	CBigInt A, B, C, S, R;
 
-	char *A_ = "914256756745435234521231231231231234353464";
-	char *B_ = "782425675674543523452123123123123123435346";
-	char *C_ = "342567567454352345212312312312312343534641";
-	CB_Get(A_, (int)strlen(A_), 10, &A);
-	CB_Get(B_, (int)strlen(B_), 10, &B);
-	CB_Get(C_, (int)strlen(C_), 10, &C);
+	{
+		char *A_ = "914256756745435234521231231231231234353464";
+		char *B_ = "782425675674543523452123123123123123435346";
+		char *C_ = "342567567454352345212312312312312343534641";
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
 
-	CB_Mul(&A, &B, &S);
-	char *R1_ = "715337960636563940574034165385623354370778401396613281226909285848406966498915138544";
-	CB_Get(R1_, (int)strlen(R1_), 10, &R);
+		CB_Mul(&A, &B, &S);
+		char *R1_ = "715337960636563940574034165385623354370778401396613281226909285848406966498915138544";
+		CB_Get(R1_, (int)strlen(R1_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
 
-	CB_Mul(&A, &C, &S);
-	char *R2_ = "313194713186989288199503625649422280943032024188354685535543955321177130372122346424";
-	CB_Get(R2_, (int)strlen(R2_), 10, &R);
+		CB_Mul(&A, &C, &S);
+		char *R2_ = "313194713186989288199503625649422280943032024188354685535543955321177130372122346424";
+		CB_Get(R2_, (int)strlen(R2_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
 
-	CB_Mul(&B, &C, &S);
-	char *R3_ = "268033660429656399361658170372750057476739996391808486812616310607192788112274820786";
-	CB_Get(R3_, (int)strlen(R3_), 10, &R);
+		CB_Mul(&B, &C, &S);
+		char *R3_ = "268033660429656399361658170372750057476739996391808486812616310607192788112274820786";
+		CB_Get(R3_, (int)strlen(R3_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	}
+
+	{
+		char *A_ = "-914256756745435234521231231231231234353464";
+		char *B_ = "782425675674543523452123123123123123435346";
+		char *C_ = "-342567567454352345212312312312312343534641";
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
+
+		CB_Mul(&A, &B, &S);
+		char *R1_ = "-715337960636563940574034165385623354370778401396613281226909285848406966498915138544";
+		CB_Get(R1_, (int)strlen(R1_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+
+		CB_Mul(&A, &C, &S);
+		char *R2_ = "313194713186989288199503625649422280943032024188354685535543955321177130372122346424";
+		CB_Get(R2_, (int)strlen(R2_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+
+		CB_Mul(&B, &C, &S);
+		char *R3_ = "-268033660429656399361658170372750057476739996391808486812616310607192788112274820786";
+		CB_Get(R3_, (int)strlen(R3_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	}
 }
 
 void Test_ckl_bigint_div(CuTest *tc) {
 	CBigInt A, B, C, X, Y, Z;
 
-	char *X_ = "231231231221231231233123435464";
-	char *Y_ = "142567567454352345123243534364";
-	CB_Get(X_, (int)strlen(X_), 10, &X);
-	CB_Get(Y_, (int)strlen(Y_), 10, &Y);
-	CB_Mul(&X, &Y, &Z);
+	{
+		char *X_ = "231231231221231231233123435464";
+		char *Y_ = "142567567454352345123243534364";
+		CB_Get(X_, (int)strlen(X_), 10, &X);
+		CB_Get(Y_, (int)strlen(Y_), 10, &Y);
+		CB_Mul(&X, &Y, &Z);
 
-	for (int i = 0; i < bigint_str_list_len; i++) {
-		CB_Get(bigint_str_list[i], (int)strlen(bigint_str_list[i]), 10, &A);
+		for (int i = 0; i < bigint_str_list_len; i++) {
+			CB_Get(bigint_str_list[i], (int)strlen(bigint_str_list[i]), 10, &A);
+			// b = a * x * y;  c = b / x / y;
+			// assert a == c
+			CB_Mul(&A, &Z, &B);
+			CB_Div(&B, &X, &C);
+			CB_S_Div(&C, &Y);
+			if (CB_Cmp(&A, &C) != 0) {
+				CB_Mul(&A, &Z, &B);
+				CB_Div(&B, &X, &C);
+				CB_S_Div(&C, &Y);
+				CB_Cmp(&A, &C);
+			}
+			CuAssertIntEquals(tc, 0, CB_Cmp(&A, &C));
+		}
+	}
 
-		CB_Mul(&A, &Z, &B);
-		CB_Div(&B, &X, &C);
-		CB_S_Div(&C, &Y);
-		CuAssertIntEquals(tc, 0, CB_Cmp(&A, &C));
+	{
+		char *X_ = "-4534521435345345464";
+		char *Y_ = "-1425675675698734532423243534364";
+		CB_Get(X_, (int)strlen(X_), 10, &X);
+		CB_Get(Y_, (int)strlen(Y_), 10, &Y);
+		CB_Mul(&X, &Y, &Z);
+
+		for (int i = 0; i < bigint_str_list_len; i++) {
+			CB_Get(bigint_str_list[i], (int)strlen(bigint_str_list[i]), 10, &A);
+			// b = a * x * y;  c = b / x / y;
+			// assert a == c
+			CB_Mul(&A, &Z, &B);
+			CB_Div(&B, &X, &C);
+			CB_S_Div(&C, &Y);
+			if (CB_Cmp(&A, &C) != 0) {
+				CB_Mul(&A, &Z, &B);
+				CB_Div(&B, &X, &C);
+				CB_S_Div(&C, &Y);
+				CB_Cmp(&A, &C);
+			}
+			CuAssertIntEquals(tc, 0, CB_Cmp(&A, &C));
+		}
 	}
 }
 
 void Test_ckl_bigint_div2(CuTest *tc) {
 	CBigInt A, B, C, S, R;
 
-	char *A_ = "715337960636563940574034165385623354370778401396613281226909285848406966498915138544";
-	char *B_ = "782425675674543523453123123435346";
-	char *C_ = "342567567454352343534641";
-	CB_Get(A_, (int)strlen(A_), 10, &A);
-	CB_Get(B_, (int)strlen(B_), 10, &B);
-	CB_Get(C_, (int)strlen(C_), 10, &C);
+	{
+		char *A_ = "715337960636563940574034165385623354370778401396613281226909285848406966498915138544";
+		char *B_ = "782425675674543523453123123435346";
+		char *C_ = "342567567454352343534641";
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
 
-	CB_Div(&A, &B, &S);
-	char *R1_ = "914256756745435234520062740637656180745796783793647";
-	CB_Get(R1_, (int)strlen(R1_), 10, &R);
+		CB_Div(&A, &B, &S);
+		char *R1_ = "914256756745435234520062740637656180745796783793647";
+		CB_Get(R1_, (int)strlen(R1_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
 
-	CB_Div(&A, &C, &S);
-	char *R2_ = "2088166039629200527261405558028711359332057856671964538814012";
-	CB_Get(R2_, (int)strlen(R2_), 10, &R);
+		CB_Div(&A, &C, &S);
+		char *R2_ = "2088166039629200527261405558028711359332057856671964538814012";
+		CB_Get(R2_, (int)strlen(R2_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
 
-	CB_Div(&B, &C, &S);
-	char *R3_ = "2284003945";
-	CB_Get(R3_, (int)strlen(R3_), 10, &R);
+		CB_Div(&B, &C, &S);
+		char *R3_ = "2284003945";
+		CB_Get(R3_, (int)strlen(R3_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	}
+
+	{
+		char *A_ = "715337960636563940574034165385623354370778401396613281226909285848406966498915138544";
+		char *B_ = "-782425675674543523453123123435346";
+		char *C_ = "-342567567454352343534641";
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
+
+		CB_Div(&A, &B, &S);
+		char *R1_ = "-914256756745435234520062740637656180745796783793647";
+		CB_Get(R1_, (int)strlen(R1_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+
+		CB_Div(&A, &C, &S);
+		char *R2_ = "-2088166039629200527261405558028711359332057856671964538814012";
+		CB_Get(R2_, (int)strlen(R2_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+
+		CB_Div(&B, &C, &S);
+		char *R3_ = "2284003945";
+		CB_Get(R3_, (int)strlen(R3_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	}
 }
 
 void Test_ckl_bigint_mod(CuTest *tc) {
 	CBigInt A, B, C, S, R;
 
-	char *A_ = "715337960636563940574034165385623354370778401396613281226909285848406966498915138544";
-	char *B_ = "782425675674543523453123123435346";
-	char *C_ = "342567567454352343534641";
-	CB_Get(A_, (int)strlen(A_), 10, &A);
-	CB_Get(B_, (int)strlen(B_), 10, &B);
-	CB_Get(C_, (int)strlen(C_), 10, &C);
+	{
+		char *A_ = "715337960636563940574034165385623354370778401396613281226909285848406966498915138544";
+		char *B_ = "782425675674543523453123123435346";
+		char *C_ = "342567567454352343534641";
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
 
-	CB_Mod(&A, &B, &S);
-	char *R1_ = "422652519357991133203661905091682";
-	CB_Get(R1_, (int)strlen(R1_), 10, &R);
+		CB_Mod(&A, &B, &S);
+		char *R1_ = "422652519357991133203661905091682";
+		CB_Get(R1_, (int)strlen(R1_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
 
-	CB_Mod(&A, &C, &S);
-	char *R2_ = "114327586380072736948852";
-	CB_Get(R2_, (int)strlen(R2_), 10, &R);
+		CB_Mod(&A, &C, &S);
+		char *R2_ = "114327586380072736948852";
+		CB_Get(R2_, (int)strlen(R2_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
 
-	CB_Mod(&B, &C, &S);
-	char *R3_ = "179749163400007835276601";
-	CB_Get(R3_, (int)strlen(R3_), 10, &R);
+		CB_Mod(&B, &C, &S);
+		char *R3_ = "179749163400007835276601";
+		CB_Get(R3_, (int)strlen(R3_), 10, &R);
 
-	CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	}
+
+	{
+		char *A_ = "-715337960636563940574034165385623354370778401396613281226909285848406966498915138544";
+		char *B_ = "-782425675674543523453123123435346";
+		char *C_ = "342567567454352343534641";
+		CB_Get(A_, (int)strlen(A_), 10, &A);
+		CB_Get(B_, (int)strlen(B_), 10, &B);
+		CB_Get(C_, (int)strlen(C_), 10, &C);
+
+		CB_Mod(&A, &B, &S);
+		char *R1_ = "422652519357991133203661905091682";
+		CB_Get(R1_, (int)strlen(R1_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+
+		CB_Mod(&A, &C, &S);
+		char *R2_ = "114327586380072736948852";
+		CB_Get(R2_, (int)strlen(R2_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+
+		CB_Mod(&B, &C, &S);
+		char *R3_ = "179749163400007835276601";
+		CB_Get(R3_, (int)strlen(R3_), 10, &R);
+
+		CuAssertIntEquals(tc, 0, CB_Cmp(&S, &R));
+	}
 }
 
 void Test_ckl_bigint_sqrt(CuTest *tc) {
@@ -536,6 +814,9 @@ void Test_ckl_bigint_sqrt(CuTest *tc) {
 
 	for (int i = 0; i < bigint_str_list_len; i++) {
 		CB_Get(bigint_str_list[i], (int)strlen(bigint_str_list[i]), 10, &A);
+		if (A.m_signed == -1) {
+			continue;
+		}
 
 		CB_Mul(&A, &A, &B);
 		CB_Sqrt(&B, &C);
@@ -645,7 +926,7 @@ void Test_ckl_bigint_rsa(CuTest *tc) {
 	CB_Lcm(&p_, &q_, &L);
 
 	// 4.随机选择一个整数E，条件是1< E < L，且E与L互质  (实际应用中，常常选择65537)
-	CB_Movi(65537, &E);
+	CB_Movu(65537, &E);
 
 	// 5.计算E对于φ(N)的模反元素D  E*x + L*y = gcd(E, L) = 1  整数解 其中 x 即为 E
 	CB_ExtGcd(&E, &L, &D, &tmp);
@@ -656,8 +937,25 @@ void Test_ckl_bigint_rsa(CuTest *tc) {
 	CB_Put(&N, N_str, sizeof(N_str), 10);
 	CB_Put(&E, E_str, sizeof(E_str), 10);
 	CB_Put(&D, D_str, sizeof(D_str), 10);
+
 	printf("\n pubkey :%s ,  %s", N_str, E_str);
 	printf("\n prikey :%s ,  %s", N_str, D_str);
+
+	CBigInt M, C;
+	unsigned char M_str[2048] = { 0 };
+	unsigned char C_str[2048] = { 0 };
+	char *M_ = "1234567890";
+	CB_Get(M_, (int)strlen(M_), 10, &M);
+
+	CB_ModExp(&M, &E, &N, &C);
+	CB_Put(&M, M_str, sizeof(M_str), 10);
+	CB_Put(&C, C_str, sizeof(C_str), 10);
+	printf("\n pwd :%s", M_str);
+	printf("\n encode :%s", C_str);
+
+	CB_ModExp(&C, &D, &N, &M);
+	CB_Put(&M, M_str, sizeof(M_str), 10);
+	printf("\n decode :%s", M_str);
 }
 
 void Test_ckl_bigint_rand(CuTest *tc) {
@@ -677,9 +975,6 @@ void Test_ckl_bigint_rand(CuTest *tc) {
 
 CuSuite* Suite_ckl_bigint() {
 	CuSuite* suite = CuSuiteNew();
-	SUITE_ADD_TEST(suite, Test_ckl_bigint_gcd);
-	SUITE_ADD_TEST(suite, Test_ckl_bigint_rand);
-	SUITE_ADD_TEST(suite, Test_ckl_bigint_rsa);
 
 	SUITE_ADD_TEST(suite, Test_ckl_bigint_get_put);
 	SUITE_ADD_TEST(suite, Test_ckl_bigint_cmp);
@@ -690,9 +985,14 @@ CuSuite* Suite_ckl_bigint() {
 	SUITE_ADD_TEST(suite, Test_ckl_bigint_div);
 	SUITE_ADD_TEST(suite, Test_ckl_bigint_div2);
 	SUITE_ADD_TEST(suite, Test_ckl_bigint_mod);
+
 	SUITE_ADD_TEST(suite, Test_ckl_bigint_sqrt);
 	SUITE_ADD_TEST(suite, Test_ckl_bigint_ModExp);
 	SUITE_ADD_TEST(suite, Test_ckl_bigint_prime);
+
+	SUITE_ADD_TEST(suite, Test_ckl_bigint_gcd);
+	SUITE_ADD_TEST(suite, Test_ckl_bigint_rand);
+	SUITE_ADD_TEST(suite, Test_ckl_bigint_rsa);
 	return suite;
 }
 
