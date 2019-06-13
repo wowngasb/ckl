@@ -48,7 +48,6 @@ extern "C" {
 	void encodeByXor(unsigned char* buf, int buflen, unsigned char* key, int keylen);
 
 	unsigned long otfpn(unsigned long n, int k);
-	unsigned long otklfindp(unsigned long n);
 	unsigned long fpn(unsigned long n, int k);
 	unsigned long klfindp(unsigned long n);
 	unsigned long findp(unsigned long n);

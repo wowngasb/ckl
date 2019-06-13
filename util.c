@@ -423,59 +423,6 @@ unsigned long otfpn(unsigned long n, int k)
 	return xpn;
 }
 
-unsigned long otklfindp(unsigned long n)
-{
-	//	if ((long)n<0 || n>4294967296)  return -1;
-
-	int low = 0;
-	int high = pppn;
-	int mid, sqrtn, k;
-	int kp = 0;
-	unsigned long lp = 0;
-	unsigned long pnum;
-	if (n <= 65536)
-	{
-		while (low < high && lp != kp + 1)
-		{
-			mid = low + ((high - low) / 2);
-			kp = low;
-			lp = high;
-			if (ppp[mid] == n)  return (long)mid + 1;
-			if (n < ppp[mid])
-				high = mid;
-			else
-				low = mid;
-		}
-		return (kp > 0) ? lp : 0;
-	}
-	else
-	{
-		pnum = (n + 1) / 2;
-		sqrtn = sqrt((double)n);
-		while (low < high - 1 && lp != kp + 1)
-		{
-			mid = low + ((high - low) / 2);
-			kp = low;
-			lp = high;
-			if (ppp[mid] == sqrtn)
-			{
-				lp = mid;
-				break;
-			}
-			if (sqrtn < ppp[mid])
-				high = mid;
-			else
-				low = mid;
-		}
-
-		for (k = 1; k <= lp; k++)
-			pnum = pnum - otfpn(n, k) + 1;
-		return pnum;
-	}
-}
-
-
-
 unsigned long fpn(unsigned long n, int k)
 {
 	if (n < ppp[k])  return 0;
@@ -491,8 +438,6 @@ unsigned long fpn(unsigned long n, int k)
 	}
 	return xpn;
 }
-
-
 
 unsigned long klfindp(unsigned long n)
 {
