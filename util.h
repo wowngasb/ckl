@@ -46,6 +46,14 @@ extern "C" {
 	void authcode(int cmd, char* indata, int inlen, unsigned char* outdata, int *outlen, char* _key, unsigned int expiry, char* salt, int rnd_length, int chk_length);
 
 	void encodeByXor(unsigned char* buf, int buflen, unsigned char* key, int keylen);
+
+	long otfpn(unsigned long n, int k);
+	long otklfindp(unsigned long n);
+	long fpn(unsigned long n, int k);
+	long klfindp(unsigned long n);
+	int isPrime(unsigned long n);
+	int klPrime(unsigned long n);
+
 #if __cplusplus
 }
 #endif

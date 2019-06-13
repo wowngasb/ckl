@@ -996,13 +996,44 @@ CuSuite* Suite_ckl_bigint() {
 	return suite;
 }
 
+void Test_ckl_prime_is(CuTest *tc) {
+	unsigned long a, b, c;
+	a = 9973;
+	b = 9967;
+	c = a * b;
+
+	CuAssertIntEquals(tc, 1, isPrime(a));
+	CuAssertIntEquals(tc, 1, isPrime(b));
+	CuAssertIntEquals(tc, 0, isPrime(c));
+
+	CuAssertIntEquals(tc, 1, klPrime(a));
+	CuAssertIntEquals(tc, 1, klPrime(b));
+	CuAssertIntEquals(tc, 0, klPrime(c));
+
+	for (unsigned long i = 1234000000; i <=1234999999; i++) {
+		a = isPrime(i);
+		b = klPrime(i);
+		CuAssertIntEquals(tc, a, b);
+	}
+}
+
+CuSuite* Suite_ckl_prime() {
+	CuSuite* suite = CuSuiteNew();
+
+	SUITE_ADD_TEST(suite, Test_ckl_prime_is);
+
+	return suite;
+}
+
 void RunAllTests(void) {
 	CuString *output = CuStringNew();
 	CuSuite* suite = CuSuiteNew();
 
-	CuSuiteAddSuite(suite, Suite_ckl_bigint());
-	CuSuiteAddSuite(suite, Suite_ckl_encode_decode());
-	CuSuiteAddSuite(suite, Suite_ckl_other());
+	CuSuiteAddSuite(suite, Suite_ckl_prime());
+
+	// CuSuiteAddSuite(suite, Suite_ckl_bigint());
+	// CuSuiteAddSuite(suite, Suite_ckl_encode_decode());
+	// CuSuiteAddSuite(suite, Suite_ckl_other());
 
 	CuSuiteRun(suite);
 	CuSuiteSummary(suite, output);
