@@ -382,11 +382,11 @@ const int pppn = sizeof(ppp) / sizeof(ppp[0]);
 #define pppm  ppp[pppn - 1]
 
 
-long otfpn(unsigned long n, int k)
+unsigned long otfpn(unsigned long n, int k)
 {
 	if (n < ppp[k])  return 0;
 	if (n < ppp[k] * ppp[k])  return 1;
-	long xpo, xpn;
+	unsigned long xpo, xpn;
 	int nn;
 	unsigned long pp2 = ppp[k] * ppp[k];
 	xpo = n / ppp[k];
@@ -423,7 +423,7 @@ long otfpn(unsigned long n, int k)
 	return xpn;
 }
 
-long otklfindp(unsigned long n)
+unsigned long otklfindp(unsigned long n)
 {
 	//	if ((long)n<0 || n>4294967296)  return -1;
 
@@ -431,8 +431,8 @@ long otklfindp(unsigned long n)
 	int high = pppn;
 	int mid, sqrtn, k;
 	int kp = 0;
-	int lp = 0;
-	long pnum;
+	unsigned long lp = 0;
+	unsigned long pnum;
 	if (n <= 65536)
 	{
 		while (low < high && lp != kp + 1)
@@ -446,7 +446,7 @@ long otklfindp(unsigned long n)
 			else
 				low = mid;
 		}
-		return (kp > 0) ? (long)lp : 0;
+		return (kp > 0) ? lp : 0;
 	}
 	else
 	{
@@ -476,11 +476,11 @@ long otklfindp(unsigned long n)
 
 
 
-long fpn(unsigned long n, int k)
+unsigned long fpn(unsigned long n, int k)
 {
 	if (n < ppp[k])  return 0;
 	if (n < ppp[k] * ppp[k])  return 1;
-	long xpo, xpn;
+	unsigned long xpo, xpn;
 	int nn;
 	xpo = n / ppp[k];
 	xpn = xpo - xpo / 2;
@@ -494,17 +494,15 @@ long fpn(unsigned long n, int k)
 
 
 
-long klfindp(unsigned long n)
+unsigned long klfindp(unsigned long n)
 {
-	//	if ((long)n<0 || n>4294967296)  return -1;
-
 	int low = 0;
 	int high = pppn;
-	int mid, sqrtn, k;
+	int mid, k;
 	int kp = 0;
-	int lp = 0;
-	long pnum;
-	if (n < 65536)
+	unsigned long lp = 0;
+	unsigned long pnum;
+	if (n <= pppm)
 	{
 		while (low < high && lp != kp + 1)
 		{
@@ -517,27 +515,14 @@ long klfindp(unsigned long n)
 			else
 				low = mid;
 		}
-		return (kp > 0) ? (long)lp : 0;
+		return (kp > 0) ? lp : 0;
 	}
 	else
 	{
 		pnum = (n + 1) / 2;
-		sqrtn = sqrt((double)n);
-		while (low < high - 1 && lp != kp + 1)
-		{
-			mid = low + ((high - low) / 2);
-			kp = low;
-			lp = high;
-			if (ppp[mid] == sqrtn)
-			{
-				lp = mid;
-				break;
-			}
-			if (sqrtn < ppp[mid])
-				high = mid;
-			else
-				low = mid;
-		}
+		unsigned long sqrtn = (unsigned long)(sqrt((double)n));
+
+		lp = klfindp(sqrtn);
 
 		for (k = 1; k <= lp; k++)
 			pnum = pnum - fpn(n, k) + 1;
@@ -545,6 +530,49 @@ long klfindp(unsigned long n)
 	}
 }
 
+unsigned long findp(unsigned long n) {
+	unsigned long ret = n >= 2 ? 1 : 0;
+	for (unsigned long i = 3; i <= n; i += 2) {
+		if (klPrime(i)) {
+			ret += 1;
+		}
+	}
+	return ret;
+}
+
+unsigned long findpEx(unsigned long n) {
+	if (n < 2) return 0;
+
+	char exist = 1;
+	char not_exist = 0;
+
+	unsigned long count = n - 1;      //假设全部是素数
+
+	char* A = malloc(sizeof(char)*(n + 1));
+	memset(A, exist, sizeof(char)*(n + 1));
+	int k = (int)(sqrt((double)n));
+
+	for (int p = 2; p <= k; p++)
+	{
+		if (A[p] == exist)
+		{
+			int j = p * p;
+			while (j <= n)
+			{
+				if (A[j] == exist)     //只有没被去除，才做去除操作。避免重复统计
+				{
+					A[j] = not_exist;
+					count--;           //减少1个
+				}
+				j += p;
+			}
+		}
+	}
+
+	free(A);
+	return count;
+
+}
 
 int klPrime(unsigned long n)
 {
@@ -553,14 +581,14 @@ int klPrime(unsigned long n)
 	}
 
 	int i, k, j;
-	k = sqrt((double)n);
+	k = (int)(sqrt((double)n));
 	for (i = 0; i < pppn; i++)
 	{
 		//  pp=ppp[i];
 		if (n % ppp[i] == 0)   return 0;
 		if (k < ppp[i])   return 1;
 	}
-	for (j = pppm; j <= k; j = j + 2)
+	for (j = pppm; j <= k; j += 2)
 	{
 		if (n % j == 0)
 			return 0;
@@ -575,7 +603,7 @@ int isPrime(unsigned long n)
 	}
 	int i, k;
 	k = (int)(sqrt((double)n));
-	for (i = 3; i <= k; i = i + 2)
+	for (i = 3; i <= k; i += 2)
 	{
 		if (n % i == 0)
 			return 0;

@@ -1010,17 +1010,63 @@ void Test_ckl_prime_is(CuTest *tc) {
 	CuAssertIntEquals(tc, 1, klPrime(b));
 	CuAssertIntEquals(tc, 0, klPrime(c));
 
-	for (unsigned long i = 1234000000; i <=1234999999; i++) {
+	int base = 1234990000, num = 9999;
+	for (unsigned long i = base; i <= base + num; i++) {
 		a = isPrime(i);
 		b = klPrime(i);
 		CuAssertIntEquals(tc, a, b);
 	}
 }
 
+void Test_ckl_prime_findp(CuTest *tc) {
+	unsigned long a, b, c;
+	a = 9973;
+	b = 9967;
+	c = a * b;
+
+	CuAssertIntEquals(tc, 1229, findp(a));
+	CuAssertIntEquals(tc, 1228, findp(b));
+
+	CuAssertIntEquals(tc, 1229, findpEx(a));
+	CuAssertIntEquals(tc, 1228, findpEx(b));
+
+	int base = 1000000, num = 1;
+	for (unsigned long i = base; i <= base + num; i++) {
+		a = findp(i);
+		b = findpEx(i);
+		CuAssertIntEquals(tc, a, b);
+	}
+}
+
+void Test_ckl_prime_klfindp(CuTest *tc) {
+	unsigned long a, b, c;
+	a = 9973;
+	b = 9967;
+	c = a * b;
+
+	CuAssertIntEquals(tc, 1229, klfindp(a));
+	CuAssertIntEquals(tc, 1228, klfindp(b));
+
+	CuAssertIntEquals(tc, 1229, findpEx(a));
+	CuAssertIntEquals(tc, 1228, findpEx(b));
+
+	int base = 10000000, num = 99;
+	for (unsigned long i = base; i <= base + num; i++) {
+		a = klfindp(i);
+		b = findpEx(i);
+		CuAssertIntEquals(tc, a, b);
+	}
+}
+
+
 CuSuite* Suite_ckl_prime() {
 	CuSuite* suite = CuSuiteNew();
 
 	SUITE_ADD_TEST(suite, Test_ckl_prime_is);
+
+	SUITE_ADD_TEST(suite, Test_ckl_prime_findp);
+
+	SUITE_ADD_TEST(suite, Test_ckl_prime_klfindp);
 
 	return suite;
 }
