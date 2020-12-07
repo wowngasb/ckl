@@ -1077,9 +1077,9 @@ void RunAllTests(void) {
 
 	CuSuiteAddSuite(suite, Suite_ckl_prime());
 
-	// CuSuiteAddSuite(suite, Suite_ckl_bigint());
-	// CuSuiteAddSuite(suite, Suite_ckl_encode_decode());
-	// CuSuiteAddSuite(suite, Suite_ckl_other());
+	CuSuiteAddSuite(suite, Suite_ckl_bigint());
+	CuSuiteAddSuite(suite, Suite_ckl_encode_decode());
+	CuSuiteAddSuite(suite, Suite_ckl_other());
 
 	CuSuiteRun(suite);
 	CuSuiteSummary(suite, output);
